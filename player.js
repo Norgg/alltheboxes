@@ -11,19 +11,17 @@ var PlayerMethods = {
     var toks = data.split(' ');
     var command = toks[0];
     
-    var msgs = ['Unknown command: ' + data];
-
     if (command == 'name') {
-      msgs = this.setName(toks[1]);
+      this.setName(toks[1]);
     } else if (command == 'go') {
-      msgs = this.join(toks[1]);
+      this.join(toks[1]);
     } else if (command == 'desc') {
-      msgs = this.describe(data.slice(5));
+      this.describe(data.slice(5));
     } else if (command == 'look') {
-      msgs = [this.look()];
+      this.sendMessages(this.look());
+    } else {
+      this.sendMessages("Unknown command: " + command);
     }
-
-    this.sendMessages(msgs[0], msgs[1]);
   },
 
   sendMessages: function(userMessage, roomMessage) {
@@ -35,7 +33,7 @@ var PlayerMethods = {
   if (!name) return ['Change name to what?'];
     var oldNick = this.name;
     this.name = name;
-    return ['Hi ' + this.name, oldNick + ' is now ' + this.name];
+    this.sendMessages('Hi ' + this.name, oldNick + ' is now ' + this.name);
   },
 
   join: function(roomName) {
@@ -51,15 +49,14 @@ var PlayerMethods = {
       self.room = room;
       self.socket.join(self.room.name);
       var msg = 'Entered ' + self.room.name + "\n" + self.look();
-      self.sendMessages(msg, self.name + 'entered.');
+      self.sendMessages(msg, self.name + ' entered.');
     });
-    return [];
   },
 
   describe: function(desc) {
     this.room.description = desc;
     this.world.saveRoom(this.room);
-    return ["Description set", self.name + ' set the description'];
+    this.sendMessages("Description set", self.name + ' set the description');
   },
 
   look: function() {

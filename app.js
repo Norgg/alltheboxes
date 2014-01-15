@@ -44,9 +44,8 @@ function handler (req, res) {
   });
 }
 
-var players = [];
 
 io.sockets.on('connection', function (socket) {
-  players.push(new Player(socket, io, mongodb, world));
+  new Player(socket, io, mongodb, world);
   //console.log(players);
 });
