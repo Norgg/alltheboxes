@@ -1,0 +1,26 @@
+body {
+  background-color: white;
+  margin: 0px;
+  padding: 0px;
+}
+
+#content {
+  position: absolute;
+  padding: 0px;
+  margin: 0px;
+  border: none;
+  overflow-y: scroll;
+}
+
+#input {
+  position: absolute;
+  bottom: 0px;
+  margin: 0px;
+  width: 100%;
+  border: none;
+  background: #eee;
+}
+
+#input.cmd {
+  background: #afa;
+}
