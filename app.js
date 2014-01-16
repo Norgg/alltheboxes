@@ -19,13 +19,18 @@ new MongoClient(new MongoServer('localhost', 27017)).open(function(err, mongo) {
     if(err) {
       console.log(err);
     } else {
-      world = new World(rooms);
-      app.listen(8080);
-      console.log("Started.");
+      rooms.ensureIndex({'name': 1}, {unique: true, dropDups: true}, function(err) {
+        if(err) {
+          console.log(err);
+        } else {
+          world = new World(rooms);
+          app.listen(8080);
+          console.log("Started.");
+        }
+      });
     }
   });
 });
-
 
 var file = new(static.Server)('./static', {
   cache: 600,
@@ -44,8 +49,8 @@ function handler (req, res) {
   });
 }
 
+io.set('log level', 2);
 
 io.sockets.on('connection', function (socket) {
   new Player(socket, io, mongodb, world);
-  //console.log(players);
 });

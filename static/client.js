@@ -14,27 +14,44 @@ var ClientMethods = {
     this.content.height($('body').height() - $('#input').height() - 2);
   },
 
+  keyup: function(evt) {
+    var inputText = this.input.val();
+    if (inputText[0] == "/") {
+      this.input.addClass("cmd");
+    } else {
+      this.input.removeClass("cmd");
+    }
+  },
+
   keydown: function(evt) {
+    var inputText = this.input.val();
     if (evt.keyCode == 13) {
       evt.preventDefault();
       if (!this.input.val()) return;
 
-      if (this.cmdMode) {
-        this.socket.emit('cmd', this.input.val());
+
+      if (inputText[0] == "/") {
+        inputText = inputText.slice(1);
+        this.socket.emit('cmd', inputText);
       } else {
-        this.socket.emit('chat', this.input.val());
+        this.socket.emit('chat', inputText);
       }
+
       this.input.val("");
       return false;
     } else if (evt.keyCode == 9) {
       evt.preventDefault();
-      this.cmdMode =  !this.cmdMode;
-
-      if (this.cmdMode) {
+      
+      if (inputText[0] == "/") {
+        inputText = inputText.slice(1);
         this.input.addClass("cmd");
       } else {
+        inputText = "/" + inputText;
         this.input.removeClass("cmd");
       }
+
+      this.input.val(inputText);
+
       return false;
     }
   },
@@ -54,6 +71,7 @@ var Client = function() {
   this.input = $('#input');
   this.content = $('#content');
   this.resize();
+  this.input.keyup(function(evt) {self.keyup(evt);});
   this.input.keydown(function(evt) {self.keydown(evt);});
 
   $(window).resize(function(evt) {self.resize();});

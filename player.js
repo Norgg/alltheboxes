@@ -4,7 +4,7 @@ var PlayerMethods = {
 
     this.socket.broadcast.to(this.room.name).emit('output', msg);
     this.socket.emit('output', msg);
-    console.log(data);
+    console.log(new Date().toUTCString() + " [" + this.name + "] " + data);
   },
 
   cmd: function(data) {
@@ -22,6 +22,7 @@ var PlayerMethods = {
     } else {
       this.sendMessages("Unknown command: " + command);
     }
+    console.log(new Date().toUTCString() + " <" + this.name + "> " + data);
   },
 
   sendMessages: function(userMessage, roomMessage) {
@@ -40,8 +41,7 @@ var PlayerMethods = {
     var self = this;
     if (!roomName) return ['Join where?'];
     if (this.room && roomName == this.room.name) return ['Already there.'];
-    this.world.getRoom(roomName, function(err, rooms) {
-      var room = rooms[0];
+    this.world.getRoom(roomName, function(err, room) {
       if (self.room) {
         self.socket.leave(self.room.name);
         self.socket.broadcast.to(self.room.name).emit('output', self.name + " went to " + room.name + ".");
@@ -56,7 +56,7 @@ var PlayerMethods = {
   describe: function(desc) {
     this.room.description = desc;
     this.world.saveRoom(this.room);
-    this.sendMessages("Description set", self.name + ' set the description');
+    this.sendMessages("Description set", this.name + ' set the description');
   },
 
   look: function() {

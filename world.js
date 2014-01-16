@@ -1,38 +1,51 @@
+var Room = require('./room').Room
+
 var WorldMethods = {
   getRoom: function(roomName, callback) {
     self = this;
     this.rooms.findOne({name: roomName}, function(err, room) {
       if (err) {
         console.log(err);
-        callback(err, []);
+        callback(err, null);
       } else if (room) {
+        Room.load(room);
         console.log("Found " + room.name);
-        callback(null, [room]);
+        callback(null, room);
       } else {
-        console.log("Creating " + roomName);
-        self.rooms.insert({name: roomName, description: "An empty room.", contents: []}, {safe: true}, callback);
+        this.createRoom(roomName, callback);
+      }
+    });
+  },
+
+  createRoom: function(roomName, callback) {
+    console.log("Creating " + roomName);
+    self.rooms.insert(new Room(roomName), {safe: true}, function(err, rooms) {
+      if (err) {
+        console.log(err);
+        callback(err, []);
+      } else {
+        this.rooms.findOne({name: roomName}, function(err, room) {
+          if (err) {
+            console.log(err);
+            callback(err, null);
+          } else if (room) {
+            callback(null, room);
+          }
+        });
       }
     });
   },
 
   saveRoom: function(room) {
+    console.log("saving: " + room._id);
     this.rooms.save(room, function(err, rooms) {if (err) console.log(err); else console.log(room.name + " saved");});
   },
-
-  createItem: function(room, item) {
-    room.contents.push(item);
-    this.saveRoom(room);
-  },
-  
 };
+
 World = function(rooms) {
   this.rooms = rooms;
 };
-World.prototype = WorldMethods;
 
-var RoomMethods = {
-}
-Room = function() {};
-Room.prototype = RoomMethods;
+World.prototype = WorldMethods;
 
 exports.World = World;

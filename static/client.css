@@ -10,12 +10,14 @@ body {
   margin: 0px;
   border: none;
   overflow-y: scroll;
+  white-space: pre-wrap;
 }
 
 #input {
   position: absolute;
   bottom: 0px;
   margin: 0px;
+  padding-left: 1px;
   width: 100%;
   border: none;
   background: #eee;
