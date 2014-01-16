@@ -1,17 +1,24 @@
 var ClientMethods = {
-  output: function(data) {
+  addOutput: function(data) {
     //console.log(data);
-    this.content.append(escapeHTML(data)+"\n");
+    this.output.append(escapeHTML(data)+"\n");
     
-    var text = this.content.text();
-    if (text.length > this.bufSize) this.content.text(text.slice(-this.bufSize));
+    var text = this.output.text();
+    if (text.length > this.bufSize) this.output.text(text.slice(-this.bufSize));
     
-    this.content.animate({scrollTop: this.content[0].scrollHeight}, 50);
+    this.output.animate({scrollTop: this.output[0].scrollHeight}, 50);
+    
+    var maxHeight = $(window).height() - this.input.height() - this.contents.height();
+    if (this.output.height() > maxHeight) {
+      this.output.height(maxHeight);
+    }
   },
 
   resize: function() {
-    this.content.css('width', '100%');
-    this.content.height($('body').height() - $('#input').height() - 2);
+    var maxHeight = $(window).height() - this.input.height() - this.contents.height();
+    if (this.output.height() > maxHeight) {
+      this.output.height(maxHeight);
+    }
   },
 
   keyup: function(evt) {
@@ -24,17 +31,23 @@ var ClientMethods = {
   },
 
   setName: function(data) {
-    console.log("Storing name: " + data);
+    //console.log("Storing name: " + data);
     $.cookie('name', data);
   },
 
   setRoom: function(data) {
-    console.log("Storing room: " + data);
+    //console.log("Storing room: " + data);
     $.cookie('room', data);
   },
 
+  setContents: function(data) {
+    $.forEach(data, function(idx, elem) {
+      
+    });
+  },
+
   onConnect: function(evt) {
-    console.log("Connected");
+    //console.log("Connected");
     if ($.cookie('name')) {
       this.socket.emit('cmd', 'name ' + $.cookie('name'));
     }
@@ -83,9 +96,10 @@ var Client = function() {
   
   var url = location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: '');
   this.socket = io.connect(url);
-  this.socket.on('output', function (data) { self.output(data); });
+  this.socket.on('output', function (data) { self.addOutput(data); });
   this.socket.on('name', function(data) { self.setName(data); });
   this.socket.on('room', function(data) { self.setRoom(data); });
+  this.socket.on('contents', function(data) { self.setContents(data); });
   this.socket.on('connect', function(evt) { self.onConnect(evt); });
 
   this.bufSize = 1000000;
@@ -93,7 +107,8 @@ var Client = function() {
   this.cmdMode = false;
   
   this.input = $('#input');
-  this.content = $('#content');
+  this.output = $('#output');
+  this.contents = $('#contents');
   this.resize();
   this.input.keyup(function(evt) {self.keyup(evt);});
   this.input.keydown(function(evt) {self.keydown(evt);});

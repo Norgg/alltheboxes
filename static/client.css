@@ -2,25 +2,43 @@ body {
   background-color: white;
   margin: 0px;
   padding: 0px;
+  font-family: monospace;
 }
 
-#content {
+#output {
   position: absolute;
+  bottom: 6.5rem;
   padding: 0px;
   margin: 0px;
   border: none;
-  overflow-y: scroll;
+  overflow-y: auto;
   white-space: pre-wrap;
+  width: 100%;
+}
+
+#contents {
+  position: absolute;
+  bottom: 0rem;
+  height: 5rem;
+  width: 100%;
+  margin: 0px;
+  padding: 0px;
+}
+
+#contents li {
+  list-style-type: none;
 }
 
 #input {
   position: absolute;
-  bottom: 0px;
+  bottom: 5rem;
+  height: 1.5rem;
   margin: 0px;
   padding-left: 1px;
   width: 100%;
   border: none;
   background: #eee;
+  font-family: monospace;
 }
 
 #input.cmd {
