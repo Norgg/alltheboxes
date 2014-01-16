@@ -27,14 +27,15 @@ var PlayerMethods = {
 
   sendMessages: function(userMessage, roomMessage) {
     if (userMessage) this.socket.emit('output', userMessage);
-    if (roomMessage) this.socket.broadcast.to(this.room.name).emit('output', roomMessage);
+    if (roomMessage && this.room) this.socket.broadcast.to(this.room.name).emit('output', roomMessage);
   },
 
   setName: function(name) {
-  if (!name) return ['Change name to what?'];
+    if (!name) return ['Change name to what?'];
     var oldNick = this.name;
     this.name = name;
     this.sendMessages('Hi ' + this.name, oldNick + ' is now ' + this.name);
+    this.socket.emit('name', name);
   },
 
   join: function(roomName) {
@@ -50,6 +51,7 @@ var PlayerMethods = {
       self.socket.join(self.room.name);
       var msg = 'Entered ' + self.room.name + "\n" + self.look();
       self.sendMessages(msg, self.name + ' entered.');
+      self.socket.emit('room', roomName);
     });
   },
 
@@ -60,6 +62,7 @@ var PlayerMethods = {
   },
 
   look: function() {
+    if (!this.room) return "You don't seem to be anywhere...";
     var players = [];
     this.io.sockets.clients(this.room.name).forEach(function(socket) {
       players.push(socket.player.name);
@@ -81,7 +84,7 @@ var Player = function(socket, io, db, world) {
 
   this.name = 'anon' + Math.floor(Math.random()*1000);
 
-  this.join('home');
+  //this.join('home');
 
   socket.on('chat', function (data) {
     self.chat(data);

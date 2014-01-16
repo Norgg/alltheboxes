@@ -23,12 +23,33 @@ var ClientMethods = {
     }
   },
 
+  setName: function(data) {
+    console.log("Storing name: " + data);
+    $.cookie('name', data);
+  },
+
+  setRoom: function(data) {
+    console.log("Storing room: " + data);
+    $.cookie('room', data);
+  },
+
+  onConnect: function(evt) {
+    console.log("Connected");
+    if ($.cookie('name')) {
+      this.socket.emit('cmd', 'name ' + $.cookie('name'));
+    }
+    if ($.cookie('room')) {
+      this.socket.emit('cmd', 'go ' + $.cookie('room'));
+    } else {
+      this.socket.emit('cmd', 'go home');
+    }
+  },
+
   keydown: function(evt) {
     var inputText = this.input.val();
     if (evt.keyCode == 13) {
       evt.preventDefault();
       if (!this.input.val()) return;
-
 
       if (inputText[0] == "/") {
         inputText = inputText.slice(1);
@@ -63,6 +84,9 @@ var Client = function() {
   var url = location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: '');
   this.socket = io.connect(url);
   this.socket.on('output', function (data) { self.output(data); });
+  this.socket.on('name', function(data) { self.setName(data); });
+  this.socket.on('room', function(data) { self.setRoom(data); });
+  this.socket.on('connect', function(evt) { self.onConnect(evt); });
 
   this.bufSize = 1000000;
 

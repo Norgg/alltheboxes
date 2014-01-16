@@ -12,7 +12,7 @@ var WorldMethods = {
         console.log("Found " + room.name);
         callback(null, room);
       } else {
-        this.createRoom(roomName, callback);
+        self.createRoom(roomName, callback);
       }
     });
   },
