@@ -1,7 +1,18 @@
+var Entity = require('./entity.js').Entity;
+
 var RoomMethods = {
-  createItem: function(room, item) {
-    room.contents.push(item);
-    this.saveRoom(room);
+  createItem: function(itemName) {
+    var item = new Entity(itemName);
+    this.contents.push(item);
+  },
+
+  destroyItem: function(itemName) {
+    this.contents.some(function(item, index) {
+      if (item.name == itemName) {
+        this.contents.splice(index, 1)
+        return true;
+      }
+    }, this);
   },
 };
 

@@ -36,9 +36,10 @@ var WorldMethods = {
     });
   },
 
-  saveRoom: function(room) {
+  saveRoom: function(room, callback) {
     console.log("saving: " + room._id);
-    this.rooms.save(room, function(err, rooms) {if (err) console.log(err); else console.log(room.name + " saved");});
+    if (!callback) callback = function(err, rooms) {if (err) console.log(err); else console.log(room.name + " saved");};
+    this.rooms.save(room, callback);
   },
 };
 

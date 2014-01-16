@@ -28,10 +28,12 @@ body {
 
 #contents li {
   list-style-type: none;
-  width: 8rem;
+  min-width: 8rem;
+  height: 1.5rem;
   border: 1px solid black;
   padding-left: 2px;
   margin-left: -1px;
+  margin-bottom: -1px;
   float: left;
 }
 

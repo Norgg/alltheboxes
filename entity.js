@@ -1,7 +1,8 @@
 var EntityMethods = {
 };
 
-var Entity = function() {
+var Entity = function(name) {
+  this.name = name;
 };
 
 Entity.prototype = EntityMethods;
