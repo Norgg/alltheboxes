@@ -36,6 +36,7 @@ var PlayerMethods = {
     this.name = name;
     this.sendMessages('Hi ' + this.name, oldNick + ' is now ' + this.name);
     this.socket.emit('name', name);
+    this.updateContents();
   },
 
   join: function(roomName) {
@@ -52,6 +53,7 @@ var PlayerMethods = {
       var msg = 'Entered ' + self.room.name + "\n" + self.look();
       self.sendMessages(msg, self.name + ' entered.');
       self.socket.emit('room', roomName);
+      self.updateContents();
     });
   },
 
@@ -60,16 +62,21 @@ var PlayerMethods = {
     this.world.saveRoom(this.room);
     this.sendMessages("Description set", this.name + ' set the description');
   },
+  
+  //TODO: This should probably be a method on rooms.
+  updateContents: function() {
+    if (!this.room) return;
+    var contents = [];
+    this.io.sockets.clients(this.room.name).forEach(function(socket) {
+      contents.push(socket.player.name);
+    });
+    this.socket.emit('contents', contents);
+    this.socket.broadcast.to(this.room.name).emit('contents', contents);
+  },
 
   look: function() {
     if (!this.room) return "You don't seem to be anywhere...";
-    var players = [];
-    this.io.sockets.clients(this.room.name).forEach(function(socket) {
-      players.push(socket.player.name);
-    });
-    var msg = "";
-    msg += this.room.description + "\n";
-    msg += "Here: " + players.join(", ");
+    var msg = this.room.description;
     return msg;
   }
 };

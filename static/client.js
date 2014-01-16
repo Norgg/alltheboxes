@@ -41,8 +41,12 @@ var ClientMethods = {
   },
 
   setContents: function(data) {
-    $.forEach(data, function(idx, elem) {
-      
+    var self = this;
+    this.contents.empty();
+    $.each(data, function(idx, elem) {
+      var li = $('<li>');
+      li.text(elem);
+      self.contents.append(li);
     });
   },
 
