@@ -9,11 +9,11 @@ var PlayerMethods = {
       func: function(data) { this.setName(data); }
     },
     go: {
-      desc: "Teleport to a location.",
+      desc: "Go to a place.",
       func: function(data) { this.join(data); }
     },
     desc: {
-      desc: "Set the desciption for this location.",
+      desc: "Describe this place.",
       func: function(data) { this.describe(data); }
     },
     look: {
@@ -78,7 +78,7 @@ var PlayerMethods = {
       }
       self.room = room;
       self.socket.join(self.room.name);
-      var msg = 'Entered ' + self.room.name + ".\n" + self.look();
+      var msg = 'Entered ' + self.room.name + ".\n" + self.room.description;
       self.sendMessages(msg, self.name + ' entered.');
       self.socket.emit('room', roomName);
       self.updateContents(true);
@@ -138,8 +138,7 @@ var PlayerMethods = {
 
   look: function() {
     if (!this.room) return "You don't seem to be anywhere...";
-    var msg = this.room.description;
-    return msg;
+    this.sendMessages(this.room.description);
   },
   
   help: function() {

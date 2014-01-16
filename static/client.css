@@ -28,13 +28,15 @@ body {
 
 #contents li {
   list-style-type: none;
-  min-width: 8rem;
-  height: 1.5rem;
+  min-width: 6rem;
+  height: 1rem;
   border: 1px solid black;
   padding-left: 2px;
+  padding-right: 2px;
   margin-left: -1px;
   margin-bottom: -1px;
   float: left;
+  text-align: center;
 }
 
 #input {

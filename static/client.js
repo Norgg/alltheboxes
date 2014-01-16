@@ -12,6 +12,8 @@ var ClientMethods = {
     if (this.output.height() > maxHeight) {
       this.output.height(maxHeight);
     }
+
+    this.output.linkify();
   },
 
   resize: function() {
@@ -64,9 +66,16 @@ var ClientMethods = {
 
   keydown: function(evt) {
     var inputText = this.input.val();
-    if (evt.keyCode == 13) {
+    if (evt.keyCode == 13) { //return
       evt.preventDefault();
-      if (!this.input.val()) return;
+      if (!inputText) return;
+
+      if (inputText != this.history[0]) {
+        this.history.unshift(inputText);
+        while (this.history.length > this.maxHistory) {
+          this.history.pop();
+        }
+      }
 
       if (inputText[0] == "/") {
         inputText = inputText.slice(1);
@@ -76,8 +85,9 @@ var ClientMethods = {
       }
 
       this.input.val("");
+      this.historyIdx = -1;
       return false;
-    } else if (evt.keyCode == 9) {
+    } else if (evt.keyCode == 9) { //tab
       evt.preventDefault();
       
       if (inputText[0] == "/") {
@@ -91,6 +101,24 @@ var ClientMethods = {
       this.input.val(inputText);
 
       return false;
+    } else if (evt.keyCode == 38) { //up arrow
+      if (this.historyIdx == -1) this.originalInput = inputText;
+      this.historyIdx++;
+      if (this.history[this.historyIdx] != undefined) {
+        evt.preventDefault();
+        this.input.val(this.history[this.historyIdx]);
+      } else {
+        this.historyIdx--;
+      }
+    } else if (evt.keyCode == 40) { //down arrow
+      this.historyIdx--;
+      if (this.history[this.historyIdx]) {
+        evt.preventDefault();
+        this.input.val(this.history[this.historyIdx]);
+      } else {
+        this.input.val(this.originalInput);
+        this.historyIdx = -1;
+      }
     }
   },
 };
@@ -117,6 +145,11 @@ var Client = function() {
   this.resize();
   this.input.keyup(function(evt) {self.keyup(evt);});
   this.input.keydown(function(evt) {self.keydown(evt);});
+
+  this.maxHistory = 500;
+  this.history = [];
+  this.historyIdx = 0;
+  this.originalInput = "";
 
   $(window).resize(function(evt) {self.resize();});
 };
