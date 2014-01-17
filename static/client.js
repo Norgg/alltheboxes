@@ -128,7 +128,9 @@ var ClientMethods = {
 var Client = function() {
   var self=this;
   
-  var url = location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: '');
+  var url;
+  if (window.url) url = window.url;
+  else url = location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: '');
   this.socket = io.connect(url);
   this.socket.on('output', function (data) { self.addOutput(data); });
   this.socket.on('name', function(data) { self.setName(data); });
