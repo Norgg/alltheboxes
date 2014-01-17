@@ -15,6 +15,10 @@ var RoomMethods = {
     }, this);
   },
 
+  describe: function() {
+    //return this.description + "\n" + this.
+  },
+
 };
 
 Room = function(name) {

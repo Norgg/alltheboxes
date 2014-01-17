@@ -157,6 +157,13 @@ var Client = function() {
 
   $(window).resize(function(evt) {self.resize();});
   $(window).focus(function(evt) {document.title="alltheboxes";});
+
+  $(this.input).blur(function(evt) {
+    function refocus() {if (!window.getSelection().toString().length) self.input.focus(); else setTimeout(refocus, 100)};
+    setTimeout(refocus, 100);
+  });
+
+  $(window).bind('copy', function(evt) {self.input.focus();});
 };
 
 Client.prototype = ClientMethods;
