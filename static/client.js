@@ -14,6 +14,8 @@ var ClientMethods = {
     }
 
     this.output.linkify();
+
+    if (!document.hasFocus()) document.title = "*alltheboxes";
   },
 
   resize: function() {
@@ -152,6 +154,7 @@ var Client = function() {
   this.originalInput = "";
 
   $(window).resize(function(evt) {self.resize();});
+  $(window).focus(function(evt) {document.title="alltheboxes";});
 };
 
 Client.prototype = ClientMethods;

@@ -23,9 +23,10 @@ new MongoClient(new MongoServer('localhost', 27017)).open(function(err, mongo) {
         if(err) {
           console.log(err);
         } else {
-          world = new World(rooms);
-          app.listen(8080);
-          console.log("Started.");
+          world = new World(rooms, function() {
+            app.listen(8080);
+            console.log("Started.");
+          });
         }
       });
     }

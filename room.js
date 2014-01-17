@@ -14,6 +14,7 @@ var RoomMethods = {
       }
     }, this);
   },
+
 };
 
 Room = function(name) {
