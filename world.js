@@ -51,8 +51,9 @@ World = function(roomsDB, callback) {
       self.rooms = {};
       rooms.forEach(function(room) {
         self.rooms[room.name] = room;
+		console.log("Loaded " + room.name);
       });
-      console.log(self.rooms);
+      //console.log(self.rooms);
       callback();
     }
   });

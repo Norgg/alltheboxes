@@ -33,8 +33,7 @@ var PlayerMethods = {
   chat: function(data) {
     var msg = '['+this.name+'] ' + data;
 
-    this.socket.broadcast.to(this.room.name).emit('output', msg);
-    this.socket.emit('output', msg);
+    this.sendMessages(msg, msg);
     console.log(new Date().toUTCString() + " [" + this.name + "] " + data);
   },
 
@@ -53,18 +52,21 @@ var PlayerMethods = {
     console.log(new Date().toUTCString() + " <" + this.name + "> " + data);
   },
 
-  sendMessages: function(userMessage, roomMessage) {
-    if (userMessage) this.socket.emit('output', userMessage);
-    if (roomMessage && this.room) this.socket.broadcast.to(this.room.name).emit('output', roomMessage);
+  sendMessages: function(userMessage, roomMessage, extra) {
+    var data = extra || {};
+    data.text = userMessage;
+    //console.log(data.text);
+    if (userMessage || extra) this.socket.emit('output', data);
+    data.text = roomMessage;
+    if ((roomMessage || extra) && this.room) this.socket.broadcast.to(this.room.name).emit('output', data);
   },
 
   setName: function(name) {
     if (!name) this.sendMessage('Change name to what?');
     var oldNick = this.name;
     this.name = name;
-    this.sendMessages('Hi ' + this.name, oldNick + ' is now ' + this.name + ".");
+    this.sendMessages('Hi ' + this.name, oldNick + ' is now ' + this.name + ".", {contents: this.getContents(true)});
     this.socket.emit('name', name);
-    this.updateContents(true);
   },
 
   join: function(roomName) {
@@ -79,9 +81,8 @@ var PlayerMethods = {
       self.room = room;
       self.socket.join(self.room.name);
       var msg = 'Entered ' + self.room.name + ".\n" + self.room.description;
-      self.sendMessages(msg, self.name + ' entered.');
+      self.sendMessages(msg, self.name + ' entered.', {contents: self.getContents(true)});
       self.socket.emit('room', roomName);
-      self.updateContents(true);
     });
   },
 
@@ -93,47 +94,48 @@ var PlayerMethods = {
 
   createItem: function(itemName) {
     this.room.createItem(itemName);
-    this.saveAndUpdateRoom();
+    this.sendMessages(itemName + " created.", this.name + " created " + itemName, {contents: this.getContents(true)});
   },
 
   destroyItem: function(itemName) {
-    this.room.destroyItem(itemName);
-    this.saveAndUpdateRoom();
+    if (this.room.destroyItem(itemName)) {
+      this.sendMessages(itemName + " destroyed.", this.name + " destroyed " + itemName, {contents: this.getContents(true)});
+      this.saveRoom();
+    } else {
+      this.sendMessages("There's no " + itemName + " here.");
+    }
   },
 
   disconnect: function() {
-    this.sendMessages(null, this.name + ' exploded.');
-    this.updateContents(false);
+    this.sendMessages(null, this.name + ' evaporated.', {contents: this.getContents(false)});
+    this.saveRoom();
   },
 
-  saveAndUpdateRoom: function() {
+  saveRoom: function() {
     var self = this;
     this.world.saveRoom(this.room, function(err, room) {
       if (err) {
         console.log(err);
-      } else {
-        self.updateContents(true);
       }
     });
   },
   
   //TODO: This should probably be a method on rooms.
-  updateContents: function(includeSelf) {
+  getContents: function(includeSelf) {
     var self=this;
     if (!this.room) return;
     var contents = [];
     this.io.sockets.clients(this.room.name).forEach(function(socket) {
       if (includeSelf || socket != self.socket) {
-        contents.push("@"+socket.player.name);
+        contents.push({name: "@"+socket.player.name});
       }
     });
 
     this.room.contents.forEach(function(entity) {
-      contents.push(entity.name);
+      contents.push(entity);
     });
 
-    if (includeSelf) this.socket.emit('contents', contents);
-    this.socket.broadcast.to(this.room.name).emit('contents', contents);
+    return contents;
   },
 
   look: function() {

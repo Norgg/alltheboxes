@@ -1,7 +1,13 @@
 var ClientMethods = {
   addOutput: function(data) {
-    //console.log(data);
-    this.output.append(escapeHTML(data)+"\n");
+    console.log(data);
+    if (data.text) {
+      this.output.append(escapeHTML(data.text)+"\n");
+    };
+
+    if (data.contents) {
+      this.setContents(data.contents);
+    }
     
     var text = this.output.text();
     if (text.length > this.bufSize) this.output.text(text.slice(-this.bufSize));
@@ -49,7 +55,8 @@ var ClientMethods = {
     this.contents.empty();
     $.each(data, function(idx, elem) {
       var li = $('<li>');
-      li.text(elem);
+      li.text(elem.name);
+      li.attr('title', elem.description);
       self.contents.append(li);
     });
   },
@@ -135,7 +142,7 @@ var Client = function() {
   this.socket.on('output', function (data) { self.addOutput(data); });
   this.socket.on('name', function(data) { self.setName(data); });
   this.socket.on('room', function(data) { self.setRoom(data); });
-  this.socket.on('contents', function(data) { self.setContents(data); });
+  //this.socket.on('contents', function(data) { self.setContents(data); });
   this.socket.on('connect', function(evt) { self.onConnect(evt); });
   this.socket.on('reconnect', function(evt) { self.onConnect(evt); });
 

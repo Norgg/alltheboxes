@@ -7,7 +7,7 @@ var RoomMethods = {
   },
 
   destroyItem: function(itemName) {
-    this.contents.some(function(item, index) {
+    return this.contents.some(function(item, index) {
       if (item.name == itemName) {
         this.contents.splice(index, 1)
         return true;
