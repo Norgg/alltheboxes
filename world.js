@@ -3,7 +3,7 @@ var Room = require('./room').Room
 var WorldMethods = {
   getRoom: function(roomName, callback) {
     self = this;
-    var room = this.rooms[roomName];
+    var room = this.rooms[this.roomIDs[roomName]];
     if (room) {
       console.log("Found " + room.name);
       callback(null, room);
@@ -27,7 +27,8 @@ var WorldMethods = {
           } else if (room) {
             Room.load(room);
             console.log(room.describe());
-            self.rooms[roomName] = room;
+            self.rooms[room._id] = room;
+            self.roomIDs[room.name] = room._id;
             callback(null, room);
           }
         });
@@ -53,9 +54,11 @@ World = function(roomsDB, callback) {
       console.log(err);
     } else {
       self.rooms = {};
+      self.roomIDs = {};
       rooms.forEach(function(room) {
         Room.load(room);
-        self.rooms[room.name] = room;
+        self.rooms[room._id] = room;
+        self.roomIDs[room.name] = room._id;
         console.log("Loaded " + room.name);
       });
       //console.log(self.rooms);

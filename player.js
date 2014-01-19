@@ -53,7 +53,7 @@ var PlayerMethods = {
     } else {
       this.sendMessages("Unknown command: " + commandName);
     }
-    console.log(new Date().toUTCString() + " <" + this.name + "> " + data);
+    console.log(new Date().toUTCString() + " [" + this.name + "] /" + data);
   },
 
   sendMessages: function(userMessage, roomMessage, extra) {
@@ -172,7 +172,7 @@ var PlayerMethods = {
   editRoom: function(room) {
     console.log(room);
     Room.load(room);
-    this.world.rooms[room.name] = room;
+    this.world.rooms[room._id] = room;
     this.world.saveRoom(room);
   },
 };
