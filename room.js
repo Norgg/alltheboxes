@@ -1,4 +1,5 @@
-var Entity = require('./entity.js').Entity;
+var Entity = require('./entity.js').Entity
+  , ObjectID = require('mongodb').ObjectID;
 
 var RoomMethods = {
   createItem: function(itemName) {
@@ -16,13 +17,18 @@ var RoomMethods = {
   },
 
   describe: function() {
-    //return this.description + "\n" + this.
+    var exitsArr = [];
+    for (exit in this.exits) {
+      exitsArr.push(exit);
+    }
+    var desc = this.description;
+    if (exitsArr) desc += "\nExits: " + exitsArr.join(", ");
+    return desc;
   },
 
 };
 
 Room = function(name) {
-  console.log("Creating new room: " + name);
   this.name = name;
   this.description = "An empty room.";
   this.contents = [];
@@ -32,6 +38,8 @@ Room = function(name) {
 Room.load = function(roomData) {
   if (!roomData.contents) roomData.contents = [];
   if (!roomData.exits) roomData.exits = {};
+  console.log(roomData._id.length);
+  if (roomData._id && typeof(roomData._id) == "string") roomData._id = ObjectID.createFromHexString(roomData._id);
   roomData.__proto__ = RoomMethods;
 };
 

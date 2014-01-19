@@ -9,7 +9,11 @@ var PlayerMethods = {
       func: function(data) { this.setName(data); }
     },
     go: {
-      desc: "Go to a place.",
+      desc: "Go through an exit.",
+      func: function(data) { this.go(data); }
+    },
+    join: {
+      desc: "Teleport to a place.",
       func: function(data) { this.join(data); }
     },
     desc: {
@@ -80,10 +84,18 @@ var PlayerMethods = {
       }
       self.room = room;
       self.socket.join(self.room.name);
-      var msg = 'Entered ' + self.room.name + ".\n" + self.room.description;
+      var msg = 'Entered ' + self.room.name + ".\n" + self.room.describe();
       self.sendMessages(msg, self.name + ' entered.', {contents: self.getContents(true)});
       self.socket.emit('room', roomName);
     });
+  },
+
+  go: function(exit) {
+    if (this.room.exits[exit]) {
+      this.join(this.room.exits[exit]);
+    } else {
+      this.sendMessages("Couldn't go " + exit);
+    }
   },
 
   describe: function(desc) {
@@ -108,7 +120,7 @@ var PlayerMethods = {
 
   disconnect: function() {
     this.sendMessages(null, this.name + ' evaporated.', {contents: this.getContents(false)});
-    this.saveRoom();
+    if (this.room) this.saveRoom();
   },
 
   saveRoom: function() {
@@ -140,7 +152,7 @@ var PlayerMethods = {
 
   look: function() {
     if (!this.room) return "You don't seem to be anywhere...";
-    this.sendMessages(this.room.description);
+    this.sendMessages(this.room.describe());
   },
   
   help: function() {
@@ -149,6 +161,19 @@ var PlayerMethods = {
       msg += cmd + ": " + this.commands[cmd].desc + "\n";
     }
     this.sendMessages(msg);
+  },
+
+  /******* Editor functions, TODO: Move these elsewhere. *******/
+  sendWorld: function() {
+    console.log("Sending world.");
+    this.socket.emit("world", this.world.rooms);
+  },
+
+  editRoom: function(room) {
+    console.log(room);
+    Room.load(room);
+    this.world.rooms[room.name] = room;
+    this.world.saveRoom(room);
   },
 };
 
@@ -162,12 +187,12 @@ var Player = function(socket, io, db, world) {
 
   this.name = 'anon' + Math.floor(Math.random()*1000);
 
-  //this.join('home');
-
   socket.on('chat', function (data) { self.chat(data); });
   socket.on('cmd', function(data) { self.cmd(data); });
   socket.on('disconnect', function() { self.disconnect(); });
 
+  socket.on('getWorld', function() { self.sendWorld(); });
+  socket.on('editRoom', function(data) { self.editRoom(data); });
 };
 Player.prototype = PlayerMethods;
 exports.Player = Player;

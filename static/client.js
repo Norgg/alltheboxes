@@ -67,9 +67,9 @@ var ClientMethods = {
       this.socket.emit('cmd', 'name ' + $.cookie('name'));
     }
     if ($.cookie('room')) {
-      this.socket.emit('cmd', 'go ' + $.cookie('room'));
+      this.socket.emit('cmd', 'join ' + $.cookie('room'));
     } else {
-      this.socket.emit('cmd', 'go home');
+      this.socket.emit('cmd', 'join home');
     }
   },
 
