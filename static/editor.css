@@ -1,0 +1,10 @@
+.editbox {
+  min-width: 100px;
+  border: 1px solid black;
+  margin: 5px;
+  float: left;
+}
+
+input,textarea {
+  width: 100%;
+}
