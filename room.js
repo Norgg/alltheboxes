@@ -38,6 +38,8 @@ Room = function(name) {
 Room.load = function(roomData) {
   if (!roomData.contents) roomData.contents = [];
   if (!roomData.exits) roomData.exits = {};
+  if (!roomData.editX) roomData.editX = 0;
+  if (!roomData.editY) roomData.editY = 0;
   console.log(roomData._id.length);
   if (roomData._id && typeof(roomData._id) == "string") roomData._id = ObjectID.createFromHexString(roomData._id);
   roomData.__proto__ = RoomMethods;

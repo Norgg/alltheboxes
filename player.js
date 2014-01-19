@@ -175,6 +175,15 @@ var PlayerMethods = {
     this.world.rooms[room._id] = room;
     this.world.saveRoom(room);
   },
+
+  moveRoom: function(roomData) {
+    var room = this.world.rooms[roomData._id];
+    room.editX = roomData.editX;
+    room.editY = roomData.editY;
+    this.world.saveRoom(room);
+    console.log("Moved " + roomData.name);
+  },
+
 };
 
 var Player = function(socket, io, db, world) {
@@ -193,6 +202,7 @@ var Player = function(socket, io, db, world) {
 
   socket.on('getWorld', function() { self.sendWorld(); });
   socket.on('editRoom', function(data) { self.editRoom(data); });
+  socket.on('moveRoom', function(data) { self.moveRoom(data); });
 };
 Player.prototype = PlayerMethods;
 exports.Player = Player;

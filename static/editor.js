@@ -61,7 +61,7 @@ RoomEditor.prototype = RoomEditorMethods;
 
 var EditorMethods = {
   onConnect: function(evt) {
-    $('body').empty();
+    this.editDiv.empty();
     console.log("Connected");
     this.socket.emit('getWorld');
     this.socket.emit('join', '_editor');
@@ -79,7 +79,12 @@ var EditorMethods = {
     var self = this;
 
     var div = $('<div class="editbox">');
+ 
+    var head = $('<div class="roomHead">'); //Header, clicked on to expand.
+    head.append($('<h1 class="headTitle">' + room.data.name + '</h1>'));
     
+    var content = $('<div class="roomContent">');
+  
     var table = $('<table>');
     table.append(room.makeInput('name', room.data.name));
     table.append(room.makeTextarea('description', room.data.description));
@@ -119,16 +124,38 @@ var EditorMethods = {
 
     table.append(room.row(saveButton));
 
-    div.append(table);
+    content.append(table);
 
-    this.body.append(div);
+    head.click(function() {
+      if (self.noclick) self.noclick = false;
+      else content.toggle(200)
+    });
+
+    div.append(head);
+    div.append(content);
+
+    div.draggable({
+      start: function(evt, ui) {
+        self.noclick = true;
+      },
+      stop: function(evt, ui) {
+        var offset = div.offset();
+        room.data.editX = offset.left;
+        room.data.editY = offset.top;
+        self.socket.emit('moveRoom', room.data);
+      },
+    });
+    div.css('position', 'absolute');
+    div.offset({top: room.data.editY, left: room.data.editX});
+
+    this.editDiv.append(div);
   },
 };
 
 var Editor = function() {
   var self = this;
   this.socket = io.connect(url);
-  this.body = $('body');
+  this.editDiv = $('#editor');
   
   this.socket.on('connect', function(evt) { self.onConnect(evt); });
   //this.socket.on('reconnect', function(evt) { self.onConnect(evt); });
