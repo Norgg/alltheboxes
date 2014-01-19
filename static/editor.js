@@ -127,8 +127,12 @@ var EditorMethods = {
     content.append(table);
 
     head.click(function() {
-      if (self.noclick) self.noclick = false;
-      else content.toggle(200)
+      if (self.noclick) {
+        self.noclick = false;
+      } else {
+        content.toggle(200);
+        div.css('z-index', self.maxZ++);
+      }
     });
 
     div.append(head);
@@ -137,6 +141,7 @@ var EditorMethods = {
     div.draggable({
       start: function(evt, ui) {
         self.noclick = true;
+        div.css('z-index', self.maxZ++);
       },
       stop: function(evt, ui) {
         var offset = div.offset();
@@ -156,6 +161,7 @@ var Editor = function() {
   var self = this;
   this.socket = io.connect(url);
   this.editDiv = $('#editor');
+  self.maxZ = 1;
   
   this.socket.on('connect', function(evt) { self.onConnect(evt); });
   //this.socket.on('reconnect', function(evt) { self.onConnect(evt); });
