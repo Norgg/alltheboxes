@@ -131,7 +131,12 @@ var EditorMethods = {
         self.noclick = false;
       } else {
         content.toggle(200);
-        div.css('z-index', self.maxZ++);
+      }
+    });
+
+    div.mousedown(function() {
+      if (div.css('z-index') != self.maxZ) {
+        div.css('z-index', ++self.maxZ);
       }
     });
 
@@ -139,9 +144,9 @@ var EditorMethods = {
     div.append(content);
 
     div.draggable({
+      distance: 10,
       start: function(evt, ui) {
         self.noclick = true;
-        div.css('z-index', self.maxZ++);
       },
       stop: function(evt, ui) {
         var offset = div.offset();
