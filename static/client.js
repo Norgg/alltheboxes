@@ -23,7 +23,6 @@ var ClientMethods = {
 
   resize: function() {
     var maxHeight = $(window).height() - this.input.height() - this.contents.height();
-    console.log(maxHeight);
     if (this.output.height() > maxHeight) {
       this.output.height(maxHeight);
     }
