@@ -142,9 +142,8 @@ var Client = function() {
   this.socket.on('output', function (data) { self.addOutput(data); });
   this.socket.on('name', function(data) { self.setName(data); });
   this.socket.on('room', function(data) { self.setRoom(data); });
-  //this.socket.on('contents', function(data) { self.setContents(data); });
   this.socket.on('connect', function(evt) { self.onConnect(evt); });
-  this.socket.on('reconnect', function(evt) { self.onConnect(evt); });
+  this.socket.on('refresh', function(evt) { window.location.reload(true); });
 
   this.bufSize = 1000000;
 

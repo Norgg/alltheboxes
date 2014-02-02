@@ -80,9 +80,10 @@ var PlayerMethods = {
     var room = this.world.getRoom(roomName);
 
     if (room) {
-      if (self.room) {
-        self.socket.leave(self.room.name);
-        self.socket.broadcast.to(self.room.name).emit('output', self.name + " went to " + room.name + ".");
+      var oldRoom = self.room;
+      if (oldRoom) {
+        self.socket.leave(oldRoom.name);
+        self.sendMessages(null, null, {contents: self.getContents(false)});
       }
       self.room = room;
       self.socket.join(self.room.name);
@@ -95,7 +96,9 @@ var PlayerMethods = {
   },
 
   go: function(exit) {
-    if (this.room.exits[exit]) {
+    this.refreshRoom();
+    if (this.room && this.room.exits[exit]) {
+      this.sendMessages(null, this.name + " went " + exit + ".");
       this.join(this.room.exits[exit]);
     } else {
       this.sendMessages("Couldn't go " + exit);

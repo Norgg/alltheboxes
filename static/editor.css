@@ -31,6 +31,12 @@ body, #editor {
   display: none;
 }
 
+#newRoom {
+	position: absolute;
+  left: 2px;
+	top: 2px;
+}
+
 input,textarea {
   width: 100%;
 }

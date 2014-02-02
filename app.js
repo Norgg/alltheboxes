@@ -33,7 +33,7 @@ new MongoClient(new MongoServer('localhost', 27017)).open(function(err, mongo) {
   });
 });
 
-var file = new(static.Server)('./static', {
+var file = new(static.Server)(webroot, {
   cache: 600,
   headers: { 'X-Powered-By': 'node-static' } 
 });
@@ -54,4 +54,9 @@ io.set('log level', 2);
 
 io.sockets.on('connection', function (socket) {
   new Player(socket, io, mongodb, world);
+});
+
+fs.watch('./static', function(event, filename) {
+  console.log('Refreshing clients.');
+  io.sockets.emit('refresh');
 });

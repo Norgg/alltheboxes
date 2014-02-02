@@ -1,4 +1,5 @@
 var Room = require('./room').Room
+var ObjectID = require('mongodb').ObjectID;
 
 var WorldMethods = {
   getRoom: function(roomName) {
@@ -33,12 +34,12 @@ var WorldMethods = {
 
   destroyRoom: function(roomId, callback) {
     var self = this;
-    this.roomsDB.remove({'_id': roomId}, true, function(err) {
+    console.log("Destroying " + roomId);
+    var room = this.rooms[roomId];
+    this.roomsDB.remove({'_id': room._id}, true, function(err) {
       if (err) {
         console.log(err);
       } else {
-        console.log(self.rooms);
-        console.log(roomId);
         delete self.rooms[roomId];
         callback();
       }
@@ -47,7 +48,6 @@ var WorldMethods = {
 
   saveRoom: function(room, callback) {
     console.log("saving: " + room._id);
-    console.log(room);
     if (!callback) callback = function(err, rooms) {if (err) console.log(err); else console.log(room.name + " saved");};
     this.roomsDB.save(room, callback);
   },
@@ -70,7 +70,6 @@ World = function(roomsDB, callback) {
         self.roomIDs[room.name] = room._id;
         console.log("Loaded " + room.name);
       });
-      //console.log(self.rooms);
       callback();
     }
   });
