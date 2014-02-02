@@ -9,7 +9,7 @@ var app = require('http').createServer(handler)
   , Player = require('./player').Player
   , World = require('./world').World
 
-var webroot = './static';
+var webroot = '../client';
 
 var mongodb, world;
 
@@ -56,7 +56,7 @@ io.sockets.on('connection', function (socket) {
   new Player(socket, io, mongodb, world);
 });
 
-fs.watch('./static', function(event, filename) {
+fs.watch(webroot, function(event, filename) {
   console.log('Refreshing clients.');
   io.sockets.emit('refresh');
 });
