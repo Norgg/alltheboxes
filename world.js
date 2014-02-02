@@ -14,7 +14,7 @@ var WorldMethods = {
     self.roomsDB.insert(newRoom, {safe: true}, function(err, rooms) {
       if (err) {
         console.log(err);
-        callback(err, []);
+        callback(err, null);
       } else {
         self.roomsDB.findOne({name: roomName}, function(err, room) {
           if (err) {

@@ -179,7 +179,7 @@ var PlayerMethods = {
     this.sendMessages(msg);
   },
 
-  /******* Editor functions, TODO: Move these elsewhere. *******/
+  /******* Editor functions, TODO: Move these elsewhere. Seriously. *******/
   sendWorld: function() {
     console.log("Sending world.");
     this.socket.emit("world", this.world.rooms);
@@ -208,6 +208,18 @@ var PlayerMethods = {
     });
   },
 
+  createRoom: function(roomName) {
+    var self = this;
+    this.world.createRoom(roomName, function(err, room) {
+      if (err) {
+        //TODO: Send error message to editor, especially for duplicate name.
+        console.log(err);
+      } else {
+        self.socket.emit("roomCreated", room);
+      }
+    });
+  },
+
 };
 
 var Player = function(socket, io, db, world) {
@@ -220,14 +232,15 @@ var Player = function(socket, io, db, world) {
 
   this.name = 'anon' + Math.floor(Math.random()*1000);
 
-  socket.on('chat', function (data) { self.chat(data); });
-  socket.on('cmd', function(data) { self.cmd(data); });
-  socket.on('disconnect', function() { self.disconnect(); });
+  socket.on('chat',        function (data) { self.chat(data); });
+  socket.on('cmd',         function(data) { self.cmd(data); });
+  socket.on('disconnect',  function() { self.disconnect(); });
 
   socket.on('getWorld',    function() { self.sendWorld(); });
   socket.on('editRoom',    function(data) { self.editRoom(data); });
   socket.on('moveRoom',    function(data) { self.moveRoom(data); });
   socket.on('destroyRoom', function(data) { self.destroyRoom(data); });
+  socket.on('createRoom',  function(data) { self.createRoom(data); });
 };
 Player.prototype = PlayerMethods;
 exports.Player = Player;

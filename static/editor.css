@@ -37,6 +37,10 @@ body, #editor {
 	top: 2px;
 }
 
+#newRoomName {
+	width: 10rem;
+}
+
 input,textarea {
   width: 100%;
 }

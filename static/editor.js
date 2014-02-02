@@ -166,9 +166,9 @@ var EditorMethods = {
     this.rooms = rooms;
     console.log(rooms);
     this.roomEditors = {};
-    for (var room in rooms) {
-      var roomEditor = new RoomEditor(rooms[room]);
-      this.roomEditors[room] = roomEditor;
+    for (var roomId in rooms) {
+      var roomEditor = new RoomEditor(rooms[roomId]);
+      this.roomEditors[roomId] = roomEditor;
       roomEditor.makeRoomBox(this);
     }
   },
@@ -177,21 +177,40 @@ var EditorMethods = {
   onSaved: function(roomId) {
     this.roomEditors[roomId].div.find('.roomContent').hide(200);
   },
+
   onDestroyed: function(roomId) {
     this.roomEditors[roomId].div.remove();
+  },
+
+  onCreated: function(room) {
+    this.rooms[room._id] = room;
+    var roomEditor = new RoomEditor(room);
+    this.roomEditors[room._id] = roomEditor;
+    roomEditor.makeRoomBox(this);
+  },
+
+  createRoom: function() {
+    this.socket.emit('createRoom', this.newRoomName.val());
   },
 };
 
 var Editor = function() {
   var self = this;
-  this.socket = io.connect(url);
-  this.editDiv = $('#editor');
   self.maxZ = 1;
   
-  this.socket.on('connect', function(evt)  { self.onConnect(evt); });
-  this.socket.on('world', function(world)  { self.onWorld(world); });
-  this.socket.on('roomSaved', function(roomId) { self.onSaved(roomId); });
+  this.socket = io.connect(url);
+  this.editDiv = $('#editor');
+  
+  this.newRoomName = $('#newRoomName');
+  this.newRoomButton = $('#newRoomButton');
+  this.newRoomButton.click(function(evt) { self.createRoom(); });
+  
+  this.socket.on('connect', function(evt)          { self.onConnect(evt); });
+  this.socket.on('world', function(world)          { self.onWorld(world); });
+  this.socket.on('roomSaved', function(roomId)     { self.onSaved(roomId); });
   this.socket.on('roomDestroyed', function(roomId) { self.onDestroyed(roomId); });
+  this.socket.on('roomCreated', function(room)     { self.onCreated(room); });
+  this.socket.on('refresh', function(evt)          { window.location.reload(true); });
 
   var url;
 };
