@@ -14,6 +14,8 @@ var RoomEditorMethods = {
 
     div.draggable({
       distance: 5,
+      appendTo: '#editor',
+      scroll: true,
       start: function(evt, ui) {
         editor.noclick = true;
       },
