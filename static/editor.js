@@ -1,6 +1,8 @@
 var RoomEditorMethods = {
+  //TODO: Split this up and move into the initialiser?
   makeRoomBox: function(editor) {
     var self = this;
+    self.editor = editor;
     
     var div = $('<div class="editbox">');
  
@@ -74,15 +76,12 @@ var RoomEditorMethods = {
     div.append(content);
 
     div.draggable({
-      distance: 10,
+      distance: 5,
       start: function(evt, ui) {
         editor.noclick = true;
       },
       stop: function(evt, ui) {
-        var offset = div.offset();
-        self.data.editX = offset.left;
-        self.data.editY = offset.top;
-        editor.socket.emit('moveRoom', self.data);
+        self.savePos();
       },
     });
     div.css('position', 'absolute');
@@ -93,6 +92,21 @@ var RoomEditorMethods = {
     editor.editDiv.append(div);
   },
 
+  moveTo: function(x, y, save) {
+    var self = this;
+    this.div.animate({left: x, top: y}, 200, function() {
+      if (save) {
+        self.savePos();
+      }
+    });
+  },
+
+  savePos: function() {
+      var offset = this.div.offset();
+      this.data.editX = offset.left;
+      this.data.editY = offset.top;
+      this.editor.socket.emit('moveRoom', this.data);
+  },
 
   row: function() {
     var tr = $('<tr>');
@@ -187,6 +201,7 @@ var EditorMethods = {
     var roomEditor = new RoomEditor(room);
     this.roomEditors[room._id] = roomEditor;
     roomEditor.makeRoomBox(this);
+    roomEditor.moveTo(100, 100, true);
   },
 
   createRoom: function() {
