@@ -6,18 +6,59 @@ var RoomEditorMethods = {
     
     var div = $('<div class="editbox">');
 
+    div.mousedown(function() {
+      if (div.css('z-index') != editor.maxZ) {
+        div.css('z-index', ++editor.maxZ);
+      }
+    });
+
+    div.draggable({
+      distance: 5,
+      start: function(evt, ui) {
+        editor.noclick = true;
+      },
+      stop: function(evt, ui) {
+        self.savePos();
+      },
+    });
+
+    var head = $('<div class="roomHead">'); //Header, clicked on to expand.
+    head.append($('<h1 class="headTitle">' + self.data.name + '</h1>'));
+
+    head.click(function() {
+      if (editor.noclick) {
+        editor.noclick = false;
+      } else {
+        self.content.toggle(200);
+      }
+    });
+
+    this.content = $('<div class="roomContent">');
+
+    this.refreshContent();
+    
+    div.append(head);
+    div.append(this.content);
+
+    div.css('position', 'absolute');
+    div.offset({top: self.data.editY, left: self.data.editX});
+    
+    self.div = div;
+
+    editor.editDiv.append(div);
+  },
+
+  refreshContent: function() {
+    this.content.empty();
+    var self = this;
     var form = $('<form>');
     form.submit(function(evt) {
       evt.preventDefault();
       console.log(self.data);
+      self.div.find('.headTitle').text(self.data.name);
       editor.socket.emit('editRoom', self.data);
       return false;
     });
- 
-    var head = $('<div class="roomHead">'); //Header, clicked on to expand.
-    head.append($('<h1 class="headTitle">' + self.data.name + '</h1>'));
-    
-    var content = $('<div class="roomContent">');
   
     var table = $('<table>');
     table.append(self.makeInput('name', self.data.name));
@@ -53,64 +94,28 @@ var RoomEditorMethods = {
     var saveButton = $('<input type="submit" class="save" value="save"/>');
    
     var destroyButton = $('<button class="destroy">destroy</button>');
-    destroyButton.click(function() {
-      console.log(self.data);
+    destroyButton.click(function(evt) {
+      evt.preventDefault();
       if (confirm("Sure?")) editor.socket.emit('destroyRoom', self.data._id);
     });
 
     table.append(self.row(saveButton, destroyButton));
 
     form.append(table);
-    content.append(form);
-
-    head.click(function() {
-      if (editor.noclick) {
-        editor.noclick = false;
-      } else {
-        content.toggle(200);
-      }
-    });
-
-    div.mousedown(function() {
-      if (div.css('z-index') != editor.maxZ) {
-        div.css('z-index', ++editor.maxZ);
-      }
-    });
-
-    div.append(head);
-    div.append(content);
-
-    div.draggable({
-      distance: 5,
-      start: function(evt, ui) {
-        editor.noclick = true;
-      },
-      stop: function(evt, ui) {
-        self.savePos();
-      },
-    });
-    div.css('position', 'absolute');
-    div.offset({top: self.data.editY, left: self.data.editX});
-    
-    self.div = div;
-
-    editor.editDiv.append(div);
+    this.content.append(form);
   },
 
-  moveTo: function(x, y, save) {
-    var self = this;
-    this.div.animate({left: x, top: y}, 200, function() {
-      if (save) {
-        self.savePos();
-      }
-    });
+  moveTo: function(x, y) {
+    this.data.editX = x;
+    this.data.editY = y;
+    this.div.animate({left: x, top: y}, 200);
   },
 
   savePos: function() {
-      var offset = this.div.offset();
-      this.data.editX = offset.left;
-      this.data.editY = offset.top;
-      this.editor.socket.emit('moveRoom', this.data);
+    var offset = this.div.offset();
+    this.data.editX = offset.left;
+    this.data.editY = offset.top;
+    this.editor.socket.emit('moveRoom', this.data);
   },
 
   row: function() {
@@ -128,7 +133,7 @@ var RoomEditorMethods = {
     var input = $('<input>');
     input.attr('name', name);
     input.val(val);
-    input.keyup(function() { self.data[name]=input.val(); });
+    input.keyup(function() { if (input.val()) self.data[name]=input.val(); });
     return this.row(name+":", input);
   },
 
@@ -167,7 +172,6 @@ var RoomEditorMethods = {
 }
 
 var RoomEditor = function(data) {
-  console.log(data);
   this.data = data;
 }
 
@@ -178,7 +182,6 @@ var EditorMethods = {
     this.editDiv.empty();
     console.log("Connected");
     this.socket.emit('getWorld');
-    this.socket.emit('join', '_editor');
   },
 
   onWorld: function(rooms) {
@@ -192,7 +195,6 @@ var EditorMethods = {
     }
   },
 
-
   onSaved: function(roomId) {
     this.roomEditors[roomId].div.find('.roomContent').hide(200);
   },
@@ -202,9 +204,17 @@ var EditorMethods = {
   },
 
   onUpdated: function(room) {
+    console.log("Got update for " + room.name);
     var editor = this.roomEditors[room._id];
     editor.data = room;
-    editor.moveTo(room.editorX, room.editorY, false);
+    editor.refreshContent();
+    editor.div.find('.headTitle').text(room.name);
+    this.onMoved(room);
+  },
+
+  onMoved: function(room) {
+    var editor = this.roomEditors[room._id];
+    editor.moveTo(room.editX, room.editY);
   },
 
   onCreated: function(room) {
@@ -212,11 +222,12 @@ var EditorMethods = {
     var roomEditor = new RoomEditor(room);
     this.roomEditors[room._id] = roomEditor;
     roomEditor.makeRoomBox(this);
-    roomEditor.moveTo(100, 100, true);
   },
 
-  createRoom: function() {
-    this.socket.emit('createRoom', this.newRoomName.val());
+  createRoom: function(evt) {
+    evt.preventDefault();
+    if (this.newRoomName.val()) this.socket.emit('createRoom', this.newRoomName.val());
+    this.newRoomName.val("");
   },
 };
 
@@ -226,17 +237,16 @@ var Editor = function() {
   
   this.socket = io.connect(url);
   this.editDiv = $('#editor');
-  
   this.newRoomName = $('#newRoomName');
-  this.newRoomButton = $('#newRoomButton');
-  this.newRoomButton.click(function(evt) { self.createRoom(); });
   
+  $('#newRoomForm').submit(function(evt)           { self.createRoom(evt); });
   this.socket.on('connect', function(evt)          { self.onConnect(evt); });
   this.socket.on('world', function(world)          { self.onWorld(world); });
   this.socket.on('roomSaved', function(roomId)     { self.onSaved(roomId); });
   this.socket.on('roomDestroyed', function(roomId) { self.onDestroyed(roomId); });
   this.socket.on('roomCreated', function(room)     { self.onCreated(room); });
-  this.socket.on('roomUpdate', function(room)      { self.onUpdated(room); });
+  this.socket.on('roomUpdated', function(room)     { self.onUpdated(room); });
+  this.socket.on('roomMoved', function(room)       { self.onMoved(room); });
   this.socket.on('refresh', function(evt)          { window.location.reload(true); });
 
   var url;

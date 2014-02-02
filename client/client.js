@@ -72,6 +72,10 @@ var ClientMethods = {
       this.socket.emit('cmd', 'join home');
     }
   },
+  
+  onDisconnect: function(evt) {
+      this.output.append("Disconnected, attempting to reconnect...\n");
+  },
 
   keydown: function(evt) {
     var inputText = this.input.val();
@@ -143,6 +147,7 @@ var Client = function() {
   this.socket.on('name', function(data) { self.setName(data); });
   this.socket.on('room', function(data) { self.setRoom(data); });
   this.socket.on('connect', function(evt) { self.onConnect(evt); });
+  this.socket.on('disconnect', function(evt) { self.onDisconnect(evt); });
   this.socket.on('refresh', function(evt) { window.location.reload(true); });
 
   this.bufSize = 1000000;

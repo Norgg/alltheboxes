@@ -181,7 +181,8 @@ var PlayerMethods = {
 
   /******* Editor functions, TODO: Move these elsewhere. Seriously. *******/
   sendWorld: function() {
-    console.log("Sending world.");
+    console.log("Editor joined.");
+    this.socket.join("_editor");
     this.socket.emit("world", this.world.rooms);
   },
 
@@ -191,6 +192,7 @@ var PlayerMethods = {
     this.world.rooms[room._id] = room;
     this.world.saveRoom(room);
     this.socket.emit("roomSaved", room._id)
+    this.socket.broadcast.to('_editor').emit('roomUpdated', room);
   },
 
   moveRoom: function(roomData) {
@@ -198,24 +200,32 @@ var PlayerMethods = {
     room.editX = roomData.editX;
     room.editY = roomData.editY;
     this.world.saveRoom(room);
-    console.log("Moved " + roomData.name);
+    this.socket.broadcast.to('_editor').emit('roomMoved', room);
   },
 
   destroyRoom: function(roomId) {
     var self = this;
     this.world.destroyRoom(roomId, function() {
       self.socket.emit("roomDestroyed", roomId)
+      self.socket.broadcast.to('_editor').emit('roomDestroyed', roomId);
     });
   },
 
   createRoom: function(roomName) {
     var self = this;
+    if (!roomName) return;
     this.world.createRoom(roomName, function(err, room) {
       if (err) {
         //TODO: Send error message to editor, especially for duplicate name.
         console.log(err);
       } else {
         self.socket.emit("roomCreated", room);
+        self.socket.broadcast.to('_editor').emit('roomCreated', room);
+        
+        room.editX = 200;
+        room.editY = 200;
+        self.socket.emit("roomMoved", room);
+        self.socket.broadcast.to('_editor').emit('roomMoved', room);
       }
     });
   },

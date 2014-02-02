@@ -39,6 +39,6 @@ body, #editor {
 	width: 7rem;
 }
 
-input,textarea {
+.editbox input, .editbox textarea, .editbox button {
   width: 100%;
 }

@@ -36,11 +36,13 @@ var WorldMethods = {
     var self = this;
     console.log("Destroying " + roomId);
     var room = this.rooms[roomId];
+    console.log(room);
     this.roomsDB.remove({'_id': room._id}, true, function(err) {
       if (err) {
         console.log(err);
       } else {
         delete self.rooms[roomId];
+        console.log("destroyed.");
         callback();
       }
     });
