@@ -5,6 +5,14 @@ var RoomEditorMethods = {
     self.editor = editor;
     
     var div = $('<div class="editbox">');
+
+    var form = $('<form>');
+    form.submit(function(evt) {
+      evt.preventDefault();
+      console.log(self.data);
+      editor.socket.emit('editRoom', self.data);
+      return false;
+    });
  
     var head = $('<div class="roomHead">'); //Header, clicked on to expand.
     head.append($('<h1 class="headTitle">' + self.data.name + '</h1>'));
@@ -42,12 +50,8 @@ var RoomEditorMethods = {
       table.append(self.row(item.name));
     });
 
-    var saveButton = $('<button class="save">save</button>');
-    saveButton.click(function() {
-      console.log(self.data);
-      editor.socket.emit('editRoom', self.data);
-    });
-    
+    var saveButton = $('<input type="submit" class="save" value="save"/>');
+   
     var destroyButton = $('<button class="destroy">destroy</button>');
     destroyButton.click(function() {
       console.log(self.data);
@@ -56,7 +60,8 @@ var RoomEditorMethods = {
 
     table.append(self.row(saveButton, destroyButton));
 
-    content.append(table);
+    form.append(table);
+    content.append(form);
 
     head.click(function() {
       if (editor.noclick) {
@@ -196,6 +201,12 @@ var EditorMethods = {
     this.roomEditors[roomId].div.remove();
   },
 
+  onUpdated: function(room) {
+    var editor = this.roomEditors[room._id];
+    editor.data = room;
+    editor.moveTo(room.editorX, room.editorY, false);
+  },
+
   onCreated: function(room) {
     this.rooms[room._id] = room;
     var roomEditor = new RoomEditor(room);
@@ -225,6 +236,7 @@ var Editor = function() {
   this.socket.on('roomSaved', function(roomId)     { self.onSaved(roomId); });
   this.socket.on('roomDestroyed', function(roomId) { self.onDestroyed(roomId); });
   this.socket.on('roomCreated', function(room)     { self.onCreated(room); });
+  this.socket.on('roomUpdate', function(room)      { self.onUpdated(room); });
   this.socket.on('refresh', function(evt)          { window.location.reload(true); });
 
   var url;
