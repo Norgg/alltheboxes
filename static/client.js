@@ -2,6 +2,9 @@ var ClientMethods = {
   addOutput: function(data) {
     console.log(data);
     if (data.text) {
+      if (data.user) {
+        this.output.append(escapeHTML(data.user)+": ");
+      }
       this.output.append(escapeHTML(data.text)+"\n");
     };
 

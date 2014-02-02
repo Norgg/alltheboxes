@@ -70,8 +70,10 @@ var EditorMethods = {
   onWorld: function(rooms) {
     this.rooms = rooms;
     console.log(rooms);
+    this.roomEditors = {};
     for (var room in rooms) {
-      this.makeRoomBox(new RoomEditor(rooms[room]));
+      this.roomEditors[room] = new RoomEditor(rooms[room]);
+      this.makeRoomBox(this.roomEditors[room]);
     }
   },
 
@@ -121,8 +123,14 @@ var EditorMethods = {
       console.log(room.data);
       self.socket.emit('editRoom', room.data);
     });
+    
+    var destroyButton = $('<button class="destroy">destroy</button>');
+    destroyButton.click(function() {
+      console.log(room.data);
+      if (confirm("Sure?")) self.socket.emit('destroyRoom', room.data._id);
+    });
 
-    table.append(room.row(saveButton));
+    table.append(room.row(saveButton, destroyButton));
 
     content.append(table);
 
@@ -157,8 +165,17 @@ var EditorMethods = {
     });
     div.css('position', 'absolute');
     div.offset({top: room.data.editY, left: room.data.editX});
+    
+    room.div = div;
 
     this.editDiv.append(div);
+  },
+
+  onSaved: function(roomId) {
+    this.roomEditors[roomId].div.find('.roomContent').hide(200);
+  },
+  onDestroyed: function(roomId) {
+    this.roomEditors[roomId].div.remove();
   },
 };
 
@@ -168,9 +185,10 @@ var Editor = function() {
   this.editDiv = $('#editor');
   self.maxZ = 1;
   
-  this.socket.on('connect', function(evt) { self.onConnect(evt); });
-  //this.socket.on('reconnect', function(evt) { self.onConnect(evt); });
-  this.socket.on('world', function(world) { self.onWorld(world); });
+  this.socket.on('connect', function(evt)  { self.onConnect(evt); });
+  this.socket.on('world', function(world)  { self.onWorld(world); });
+  this.socket.on('roomSaved', function(roomId) { self.onSaved(roomId); });
+  this.socket.on('roomDestroyed', function(roomId) { self.onDestroyed(roomId); });
 
   var url;
 };

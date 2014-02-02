@@ -1,21 +1,16 @@
 var Room = require('./room').Room
 
 var WorldMethods = {
-  getRoom: function(roomName, callback) {
-    self = this;
-    var room = this.rooms[this.roomIDs[roomName]];
-    if (room) {
-      console.log("Found " + room.name);
-      callback(null, room);
-    } else {
-      self.createRoom(roomName, callback);
-    }
+  getRoom: function(roomName) {
+    return this.rooms[this.roomIDs[roomName]];
   },
 
   createRoom: function(roomName, callback) {
+    //TODO: Change this to support creating non-uniquely named rooms.
+    var self = this;
     console.log("Creating " + roomName);
-    this.rooms[roomName] = new Room(roomName);
-    self.roomsDB.insert(this.rooms[roomName], {safe: true}, function(err, rooms) {
+    var newRoom = new Room(roomName);
+    self.roomsDB.insert(newRoom, {safe: true}, function(err, rooms) {
       if (err) {
         console.log(err);
         callback(err, []);
@@ -32,6 +27,20 @@ var WorldMethods = {
             callback(null, room);
           }
         });
+      }
+    });
+  },
+
+  destroyRoom: function(roomId, callback) {
+    var self = this;
+    this.roomsDB.remove({'_id': roomId}, true, function(err) {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log(self.rooms);
+        console.log(roomId);
+        delete self.rooms[roomId];
+        callback();
       }
     });
   },

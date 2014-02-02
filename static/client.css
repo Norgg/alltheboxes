@@ -8,7 +8,7 @@ body {
 #output {
   position: absolute;
   bottom: 6.5rem;
-  padding: 0px;
+  padding: 3px;
   margin: 0px;
   overflow-y: auto;
   white-space: pre-wrap;

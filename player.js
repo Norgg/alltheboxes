@@ -35,9 +35,9 @@ var PlayerMethods = {
   },
 
   chat: function(data) {
-    var msg = '['+this.name+'] ' + data;
+    var msg = data;
 
-    this.sendMessages(msg, msg);
+    this.sendMessages(msg, msg, {user: this.name});
     console.log(new Date().toUTCString() + " [" + this.name + "] " + data);
   },
 
@@ -77,7 +77,9 @@ var PlayerMethods = {
     var self = this;
     if (!roomName) return ['Join where?'];
     if (this.room && roomName == this.room.name) return ['Already there.'];
-    this.world.getRoom(roomName, function(err, room) {
+    var room = this.world.getRoom(roomName);
+
+    if (room) {
       if (self.room) {
         self.socket.leave(self.room.name);
         self.socket.broadcast.to(self.room.name).emit('output', self.name + " went to " + room.name + ".");
@@ -87,7 +89,9 @@ var PlayerMethods = {
       var msg = 'Entered ' + self.room.name + ".\n" + self.room.describe();
       self.sendMessages(msg, self.name + ' entered.', {contents: self.getContents(true)});
       self.socket.emit('room', roomName);
-    });
+    } else {
+      self.sendMessages("No such room: " + roomName);
+    }
   },
 
   go: function(exit) {
@@ -105,6 +109,10 @@ var PlayerMethods = {
   },
 
   createItem: function(itemName) {
+    if (!itemName) {
+      this.sendMessages("Make what?");
+      return;
+    }
     this.room.createItem(itemName);
     this.sendMessages(itemName + " created.", this.name + " created " + itemName, {contents: this.getContents(true)});
   },
@@ -152,7 +160,12 @@ var PlayerMethods = {
 
   look: function() {
     if (!this.room) return "You don't seem to be anywhere...";
+    this.refreshRoom();
     this.sendMessages(this.room.describe());
+  },
+
+  refreshRoom: function() {
+    if (this.room) this.room = this.world.rooms[this.room._id];
   },
   
   help: function() {
@@ -174,6 +187,7 @@ var PlayerMethods = {
     Room.load(room);
     this.world.rooms[room._id] = room;
     this.world.saveRoom(room);
+    this.socket.emit("roomSaved", room._id)
   },
 
   moveRoom: function(roomData) {
@@ -182,6 +196,13 @@ var PlayerMethods = {
     room.editY = roomData.editY;
     this.world.saveRoom(room);
     console.log("Moved " + roomData.name);
+  },
+
+  destroyRoom: function(roomId) {
+    var self = this;
+    this.world.destroyRoom(roomId, function() {
+      self.socket.emit("roomDestroyed", roomId)
+    });
   },
 
 };
@@ -200,9 +221,10 @@ var Player = function(socket, io, db, world) {
   socket.on('cmd', function(data) { self.cmd(data); });
   socket.on('disconnect', function() { self.disconnect(); });
 
-  socket.on('getWorld', function() { self.sendWorld(); });
-  socket.on('editRoom', function(data) { self.editRoom(data); });
-  socket.on('moveRoom', function(data) { self.moveRoom(data); });
+  socket.on('getWorld',    function() { self.sendWorld(); });
+  socket.on('editRoom',    function(data) { self.editRoom(data); });
+  socket.on('moveRoom',    function(data) { self.moveRoom(data); });
+  socket.on('destroyRoom', function(data) { self.destroyRoom(data); });
 };
 Player.prototype = PlayerMethods;
 exports.Player = Player;

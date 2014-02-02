@@ -9,6 +9,11 @@
   background: white;
 }
 
+body, #editor {
+  margin: 0px;
+  padding: 0px;
+}
+
 .roomHead {
   cursor: pointer;
   text-align: center;
