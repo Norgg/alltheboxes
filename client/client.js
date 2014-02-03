@@ -2,32 +2,39 @@ var ClientMethods = {
   addOutput: function(data) {
     console.log(data);
     if (data.text) {
+      var msg = "";
       if (data.user) {
-        this.output.append(escapeHTML(data.user)+": ");
+        msg = "~"+escapeHTML(data.user)+": ";
       }
-      this.output.append(escapeHTML(data.text)+"\n");
-    };
+      msg += escapeHTML(data.text)+"\n";
+  
+      this.output.append(msg);
+      
+      var text = this.output.text();
+      if (text.length > this.bufSize) this.output.text(text.slice(-this.bufSize));
+      window.localStorage.log = text;
+      
+      this.output.animate({scrollTop: this.output[0].scrollHeight}, 50);
+      
+      this.resize();
+
+      this.output.linkify();
+    }
 
     if (data.contents) {
       this.setContents(data.contents);
     }
     
-    var text = this.output.text();
-    if (text.length > this.bufSize) this.output.text(text.slice(-this.bufSize));
-    
-    this.output.animate({scrollTop: this.output[0].scrollHeight}, 50);
-    
-    this.resize();
-
-    this.output.linkify();
 
     if (!document.hasFocus()) document.title = "*alltheboxes";
   },
 
   resize: function() {
     var maxHeight = $(window).height() - this.input.height() - this.contents.height();
+    this.output.height('auto');
     if (this.output.height() > maxHeight) {
       this.output.height(maxHeight);
+      this.output.animate({scrollTop: this.output[0].scrollHeight}, 10);
     }
   },
 
@@ -174,7 +181,12 @@ var Client = function() {
     setTimeout(refocus, 100);
   });
 
-  $(window).bind('copy', function(evt) {self.input.focus();});
+  $(window).on('copy', function(evt) {setTimeout(function() {self.input.focus();}, 100);});
+
+  if (!window.localStorage.log) window.localStorage.log = "";
+  $(window).on('unload', function(evt) { window.localStorage.log += "Goodbye at " + new Date().toUTCString() + "\n\n"; });
+  this.output.text(window.localStorage.log.slice(-this.bufSize));
+  this.addOutput({text: "Hello at " + new Date().toUTCString()});
 };
 
 Client.prototype = ClientMethods;

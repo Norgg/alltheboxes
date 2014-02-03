@@ -82,11 +82,11 @@ var PlayerMethods = {
     if (room) {
       var oldRoom = self.room;
       if (oldRoom) {
-        self.socket.leave(oldRoom.name);
+        self.socket.leave(oldRoom._id);
         self.sendMessages(null, null, {contents: self.getContents(false)});
       }
       self.room = room;
-      self.socket.join(self.room.name);
+      self.socket.join(self.room._id);
       var msg = 'Entered ' + self.room.name + ".\n" + self.room.describe();
       self.sendMessages(msg, self.name + ' entered.', {contents: self.getContents(true)});
       self.socket.emit('room', roomName);
@@ -148,9 +148,9 @@ var PlayerMethods = {
     var self=this;
     if (!this.room) return;
     var contents = [];
-    this.io.sockets.clients(this.room.name).forEach(function(socket) {
+    this.io.sockets.clients(this.room._id).forEach(function(socket) {
       if (includeSelf || socket != self.socket) {
-        contents.push({name: "@"+socket.player.name});
+        contents.push({name: "~"+socket.player.name});
       }
     });
 
