@@ -4,7 +4,7 @@ var ClientMethods = {
     if (data.text) {
       var msg = "";
       if (data.user) {
-        msg = "~"+escapeHTML(data.user)+": ";
+        msg = '~<span class="name">'+escapeHTML(data.user)+"</span>: ";
       }
       msg += escapeHTML(data.text)+"\n";
   
@@ -12,7 +12,7 @@ var ClientMethods = {
       
       var text = this.output.text();
       if (text.length > this.bufSize) this.output.text(text.slice(-this.bufSize));
-      window.localStorage.log = text;
+      window.localStorage.log = this.output.html();
       
       this.output.animate({scrollTop: this.output[0].scrollHeight}, 50);
       
@@ -185,7 +185,7 @@ var Client = function() {
 
   if (!window.localStorage.log) window.localStorage.log = "";
   $(window).on('unload', function(evt) { window.localStorage.log += "Goodbye at " + new Date().toUTCString() + "\n\n"; });
-  this.output.text(window.localStorage.log.slice(-this.bufSize));
+  this.output.html(window.localStorage.log.slice(-this.bufSize));
   this.addOutput({text: "Hello at " + new Date().toUTCString()});
 };
 
