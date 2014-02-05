@@ -58,11 +58,12 @@ var RoomEditorMethods = {
       evt.preventDefault();
       console.log(self.data);
       self.div.find('.headTitle').text(self.data.name);
-      editor.socket.emit('editRoom', self.data);
+      self.editor.socket.emit('editRoom', self.data);
       return false;
     });
   
     var table = $('<table>');
+    table.append(self.row("id:", '<input readonly value="' + self.data._id + '">'));
     table.append(self.makeInput('name', self.data.name));
     table.append(self.makeTextarea('description', self.data.description));
 
@@ -98,7 +99,7 @@ var RoomEditorMethods = {
     var destroyButton = $('<button class="destroy">destroy</button>');
     destroyButton.click(function(evt) {
       evt.preventDefault();
-      if (confirm("Sure?")) editor.socket.emit('destroyRoom', self.data._id);
+      if (confirm("Sure?")) self.editor.socket.emit('destroyRoom', self.data._id);
     });
 
     table.append(self.row(saveButton, destroyButton));
@@ -133,6 +134,10 @@ var RoomEditorMethods = {
   makeInput: function(name, val) {
     var self = this;
     var input = $('<input>');
+
+    console.log(name + "=" + val);
+    if (name == "name" && val == "Home") input.attr('readonly', true);
+
     input.attr('name', name);
     input.val(val);
     input.keyup(function() { if (input.val()) self.data[name]=input.val(); });
@@ -162,7 +167,7 @@ var RoomEditorMethods = {
       var target = self.data.exits[exitInput.data('oldval')];
       delete self.data.exits[exitInput.data('oldval')];
       exitInput.data('oldval', exitInput.val());
-      self.data.exits[exitInput.val()] = target;
+      if (exitInput.val()) self.data.exits[exitInput.val()] = target;
     });
     
     targetInput.keyup(function() {
@@ -198,7 +203,9 @@ var EditorMethods = {
   },
 
   onSaved: function(roomId) {
-    this.roomEditors[roomId].div.find('.roomContent').hide(200);
+    var roomEditor = this.roomEditors[roomId];
+    roomEditor.div.find('.roomContent').hide(200);
+    roomEditor.refreshContent();
   },
 
   onDestroyed: function(roomId) {
@@ -207,16 +214,16 @@ var EditorMethods = {
 
   onUpdated: function(room) {
     console.log("Got update for " + room.name);
-    var editor = this.roomEditors[room._id];
-    editor.data = room;
-    editor.refreshContent();
-    editor.div.find('.headTitle').text(room.name);
+    var roomEditor = this.roomEditors[room._id];
+    roomEditor.data = room;
+    roomEditor.refreshContent();
+    roomEditor.div.find('.headTitle').text(room.name);
     this.onMoved(room);
   },
 
   onMoved: function(room) {
-    var editor = this.roomEditors[room._id];
-    editor.moveTo(room.editX, room.editY);
+    var roomEditor = this.roomEditors[room._id];
+    roomEditor.moveTo(room.editX, room.editY);
   },
 
   onCreated: function(room) {

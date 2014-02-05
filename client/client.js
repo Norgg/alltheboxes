@@ -185,6 +185,8 @@ var Client = function() {
 
   if (!window.localStorage.log) window.localStorage.log = "";
   $(window).on('unload', function(evt) { window.localStorage.log += "Goodbye at " + new Date().toUTCString() + "\n\n"; });
+
+  //TODO: Move this onto the server and have it save and replay recent history per location if there's an item there recording it.
   this.output.html(window.localStorage.log.slice(-this.bufSize));
   this.addOutput({text: "Hello at " + new Date().toUTCString()});
 };

@@ -73,11 +73,11 @@ var PlayerMethods = {
     this.socket.emit('name', name);
   },
 
-  join: function(roomName) {
+  join: function(roomId) {
     var self = this;
-    if (!roomName) return ['Join where?'];
-    if (this.room && roomName == this.room.name) return ['Already there.'];
-    var room = this.world.getRoom(roomName);
+    if (!roomId) return ['Join where?'];
+    if (this.room && roomId == this.room._id) return ['Already there.'];
+    var room = this.world.rooms[roomId];
 
     if (room) {
       var oldRoom = self.room;
@@ -89,9 +89,20 @@ var PlayerMethods = {
       self.socket.join(self.room._id);
       var msg = 'Entered ' + self.room.name + ".\n" + self.room.describe();
       self.sendMessages(msg, self.name + ' entered.', {contents: self.getContents(true)});
-      self.socket.emit('room', roomName);
+      self.socket.emit('room', roomId);
     } else {
-      self.sendMessages("No such room: " + roomName);
+      self.sendMessages("Help, no such room: " + roomId);
+      if (!self.room) {
+        self.sendMessages("You are not anywhere, sending you home.");
+        self.world.getHome(function(err, home) {
+          if (err) {
+            console.log(err);
+          } else {
+            self.join(home._id);
+          }
+        });
+
+      }
     }
   },
 
@@ -187,6 +198,10 @@ var PlayerMethods = {
   },
 
   editRoom: function(room) {
+    //TODO: Error messages for these?
+    if (!this.world.rooms[room._id]) return;
+    if (this.world.rooms[room._id].name == "Home" && room.name != "Home") return; //Protect name of Home.
+
     console.log(room);
     Room.load(room);
     this.world.rooms[room._id] = room;

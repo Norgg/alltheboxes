@@ -2,10 +2,10 @@ var Room = require('./room').Room
 var ObjectID = require('mongodb').ObjectID;
 
 var WorldMethods = {
-  getRoom: function(roomName) {
-    return this.rooms[this.roomIDs[roomName]];
+  getHome: function(callback) {
+    this.roomsDB.findOne({name: 'Home'}, callback);
   },
-
+  
   createRoom: function(roomName, callback) {
     //TODO: Change this to support creating non-uniquely named rooms.
     var self = this;
@@ -24,7 +24,6 @@ var WorldMethods = {
             Room.load(room);
             console.log(room.describe());
             self.rooms[room._id] = room;
-            self.roomIDs[room.name] = room._id;
             callback(null, room);
           }
         });
@@ -65,11 +64,9 @@ World = function(roomsDB, callback) {
       console.log(err);
     } else {
       self.rooms = {};
-      self.roomIDs = {};
       rooms.forEach(function(room) {
         Room.load(room);
         self.rooms[room._id] = room;
-        self.roomIDs[room.name] = room._id;
         console.log("Loaded " + room.name);
       });
       callback();
