@@ -69,6 +69,10 @@ var ClientMethods = {
   },
 
   onConnect: function(evt) {
+    //TODO: Move this onto the server and have it save and replay recent history per location if there's an item there recording it.
+    this.output.html(window.localStorage.log.slice(-this.bufSize));
+    this.addOutput({text: "Hello at " + new Date().toUTCString()});
+    
     //console.log("Connected");
     if ($.cookie('name')) {
       this.socket.emit('cmd', 'name ' + $.cookie('name'));
@@ -81,7 +85,7 @@ var ClientMethods = {
   },
   
   onDisconnect: function(evt) {
-      this.output.append("Disconnected, attempting to reconnect...\n");
+    this.addOutput({ text: "Disconnected at " + new Date().toUTCString() + ", attempting to reconnect...\n" });
   },
 
   keydown: function(evt) {
@@ -184,11 +188,8 @@ var Client = function() {
   $(window).on('copy', function(evt) {setTimeout(function() {self.input.focus();}, 100);});
 
   if (!window.localStorage.log) window.localStorage.log = "";
+  
   $(window).on('unload', function(evt) { window.localStorage.log += "Goodbye at " + new Date().toUTCString() + "\n\n"; });
-
-  //TODO: Move this onto the server and have it save and replay recent history per location if there's an item there recording it.
-  this.output.html(window.localStorage.log.slice(-this.bufSize));
-  this.addOutput({text: "Hello at " + new Date().toUTCString()});
 };
 
 Client.prototype = ClientMethods;
