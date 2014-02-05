@@ -24,6 +24,13 @@ var RoomEditorMethods = {
       },
     });
 
+    div.droppable({
+      accept: ".exitTarget",
+      drop: function(evt, ui) {
+        ui.draggable.data("input").val(self.data._id);
+      },
+    });
+
     var head = $('<div class="roomHead">'); //Header, clicked on to expand.
     head.append($('<h1 class="headTitle">' + self.data.name + '</h1>'));
 
@@ -174,7 +181,14 @@ var RoomEditorMethods = {
       self.data.exits[exitInput.val()] = targetInput.val();
     });
 
-    return this.row(exitInput, targetInput);
+    var targetDropper = $('<span class="exitTarget">o</span>');
+    targetDropper.draggable({
+      helper: "clone"
+    });
+
+    targetDropper.data("input", targetInput);
+
+    return this.row(exitInput, targetInput, targetDropper);
   }
 }
 
