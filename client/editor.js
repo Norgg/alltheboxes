@@ -1,8 +1,8 @@
 var RoomEditorMethods = {
   //TODO: Split this up and move into the initialiser?
-  makeRoomBox: function(editor) {
+  makeRoomBox: function() {
     var self = this;
-    self.editor = editor;
+    var editor = this.editor;
     
     var div = $('<div class="editbox">');
 
@@ -19,6 +19,9 @@ var RoomEditorMethods = {
       start: function(evt, ui) {
         editor.noclick = true;
       },
+      drag: function(evt, ui) {
+        editor.drawLines();
+      },
       stop: function(evt, ui) {
         self.savePos();
       },
@@ -27,18 +30,25 @@ var RoomEditorMethods = {
     div.droppable({
       accept: ".exitTarget",
       drop: function(evt, ui) {
-        ui.draggable.data("input").val(self.data._id);
+        console.log(ui.draggable.data("roomEditor"));
+        if (ui.draggable.data("exitInput").val()) {
+          ui.draggable.data("roomEditor").data.exits[ui.draggable.data("exitInput").val()] = self.data._id;
+        }
+        ui.draggable.data("targetName").text(self.data.name);
+        ui.draggable.data("roomEditor").editor.drawLines();
       },
     });
 
     var head = $('<div class="roomHead">'); //Header, clicked on to expand.
-    head.append($('<h1 class="headTitle">' + self.data.name + '</h1>'));
+    head.append($('<h1 class="headTitle">' + this.data.name + '</h1>'));
 
     head.click(function() {
       if (editor.noclick) {
         editor.noclick = false;
       } else {
-        self.content.toggle(200);
+        self.content.toggle(200, function(){
+          editor.drawLines();
+        });
       }
     });
 
@@ -50,9 +60,9 @@ var RoomEditorMethods = {
     div.append(this.content);
 
     div.css('position', 'absolute');
-    div.offset({top: self.data.editY, left: self.data.editX});
+    div.offset({top: this.data.editY, left: this.data.editX});
     
-    self.div = div;
+    this.div = div;
 
     editor.editDiv.append(div);
   },
@@ -166,9 +176,6 @@ var RoomEditorMethods = {
     exitInput.attr('name', 'exit[]');
     exitInput.val(exit);
     exitInput.data('oldval', exit);
-    var targetInput = $('<input>');
-    targetInput.attr('name', 'target[]');
-    targetInput.val(target);
 
     exitInput.keyup(function() {
       var target = self.data.exits[exitInput.data('oldval')];
@@ -177,23 +184,55 @@ var RoomEditorMethods = {
       if (exitInput.val()) self.data.exits[exitInput.val()] = target;
     });
     
-    targetInput.keyup(function() {
-      self.data.exits[exitInput.val()] = targetInput.val();
-    });
+    var targetChange = function(evt) {
+    };
 
+    var targetName = $("<span>-</span>");
+    if (this.editor.rooms[target]) targetName.text(this.editor.rooms[target].name);
+    
     var targetDropper = $('<span class="exitTarget">o</span>');
     targetDropper.draggable({
       helper: "clone"
     });
 
-    targetDropper.data("input", targetInput);
+    targetDropper.data("roomEditor", this);
+    targetDropper.data("exitInput", exitInput);
+    targetDropper.data("targetName", targetName);
 
-    return this.row(exitInput, targetInput, targetDropper);
-  }
+
+    return this.row(exitInput, targetName, targetDropper);
+  },
+
+  exitLines: function() {
+    for (var exit in this.data.exits) {
+      var target = this.data.exits[exit];
+      var targetEditor = this.editor.roomEditors[target];
+      if (targetEditor) {
+        var pos = this.center();
+        var targetPos = targetEditor.center();
+
+        this.gfx.lineCap = 'round';
+        this.gfx.beginPath();
+        this.gfx.moveTo(pos.left, pos.top);
+        this.gfx.lineTo(targetPos.left, targetPos.top);
+        this.gfx.strokeStyle = "black";
+        this.gfx.stroke();
+      }
+    }
+  },
+
+  center: function() {
+    var pos = this.div.offset();
+    pos.top += this.div.height()/2;
+    pos.left += this.div.width()/2;
+    return pos;
+  },
 }
 
-var RoomEditor = function(data) {
+var RoomEditor = function(data, editor) {
   this.data = data;
+  this.editor = editor;
+  this.gfx = $('#lines')[0].getContext("2d");
 }
 
 RoomEditor.prototype = RoomEditorMethods;
@@ -210,20 +249,23 @@ var EditorMethods = {
     console.log(rooms);
     this.roomEditors = {};
     for (var roomId in rooms) {
-      var roomEditor = new RoomEditor(rooms[roomId]);
+      var roomEditor = new RoomEditor(rooms[roomId], this);
       this.roomEditors[roomId] = roomEditor;
-      roomEditor.makeRoomBox(this);
+      roomEditor.makeRoomBox();
     }
+    this.drawLines();
   },
 
   onSaved: function(roomId) {
+    var self = this;
     var roomEditor = this.roomEditors[roomId];
-    roomEditor.div.find('.roomContent').hide(200);
+    roomEditor.div.find('.roomContent').hide(200, function(){self.drawLines()});
     roomEditor.refreshContent();
   },
 
   onDestroyed: function(roomId) {
     this.roomEditors[roomId].div.remove();
+    this.drawLines();
   },
 
   onUpdated: function(room) {
@@ -238,13 +280,16 @@ var EditorMethods = {
   onMoved: function(room) {
     var roomEditor = this.roomEditors[room._id];
     roomEditor.moveTo(room.editX, room.editY);
+
+    this.drawLines();
   },
 
   onCreated: function(room) {
     this.rooms[room._id] = room;
-    var roomEditor = new RoomEditor(room);
+    var roomEditor = new RoomEditor(room, this);
     this.roomEditors[room._id] = roomEditor;
     roomEditor.makeRoomBox(this);
+    this.drawLines();
   },
 
   createRoom: function(evt) {
@@ -252,6 +297,23 @@ var EditorMethods = {
     if (this.newRoomName.val()) this.socket.emit('createRoom', this.newRoomName.val());
     this.newRoomName.val("");
   },
+
+  resize: function(evt) {
+    console.log("resizing");
+    this.cvs.width($(document).width());
+    this.cvs.height($(document).height());
+    this.cvs.attr("width",  this.cvs.width());
+    this.cvs.attr("height", this.cvs.height());
+    this.drawLines();
+  },
+
+  drawLines: function() {
+    this.cvs[0].width = this.cvs[0].width;
+    //this.gfx.clearRect(0, 0, this.cvs.width(), this.cvs.height());
+    for (var roomId in this.roomEditors) {
+      this.roomEditors[roomId].exitLines();
+    }
+  }
 };
 
 var Editor = function() {
@@ -271,6 +333,13 @@ var Editor = function() {
   this.socket.on('roomUpdated', function(room)     { self.onUpdated(room); });
   this.socket.on('roomMoved', function(room)       { self.onMoved(room); });
   this.socket.on('refresh', function(evt)          { window.location.reload(true); });
+
+  this.cvs = $('#lines');
+  this.gfx = $('#lines')[0].getContext("2d");
+  
+  $(document).scroll(function(evt) { self.resize(); });
+  $(window).resize(function(evt)   { self.resize(); });
+  this.resize();
 
   var url;
 };
