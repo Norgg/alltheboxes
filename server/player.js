@@ -107,8 +107,8 @@ var PlayerMethods = {
       var oldRoom = self.room;
       if (oldRoom) {
         self.socket.leave(oldRoom._id);
+        self.room.removeItem(self.entity.name);
         self.sendMessages(null, null, {contents: self.getContents(false)});
-        self.room.removeItem(self.entity);
       }
       self.room = room;
       self.room.addItem(self.entity, function(err, item) {
@@ -156,6 +156,8 @@ var PlayerMethods = {
 
   createItem: function(itemName) {
     var self = this;
+    
+    self.refreshRoom();
     if (!itemName) {
       this.sendMessages("Make what?");
       return;
@@ -176,7 +178,7 @@ var PlayerMethods = {
   },
 
   disconnect: function() {
-    this.entity.connected = false;
+    if (this.entity) this.entity.connected = false;
     if (this.room) {
       this.saveRoom();
       this.sendMessages("", "", null, {contents: this.getContents(true)});

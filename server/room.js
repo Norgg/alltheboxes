@@ -35,7 +35,8 @@ var RoomMethods = {
   removeItem: function(itemName) { // TODO: Base this on item id or something.
     return this.contents.some(function(item, index) {
       if (item.name == itemName) {
-        this.contents.splice(index, 1)
+        console.log("Removed " + itemName);
+        this.contents.splice(index, 1);
         return true;
       }
     }, this);
@@ -60,7 +61,9 @@ var RoomMethods = {
     var content_ids = [];
     console.log("Saving room.");
     for (i in this.contents) {
-      content_ids.push(this.contents[i]._id);
+      if (this.contents[i]._id) content_ids.push(this.contents[i]._id);
+      else if (typeof(this.contents[i]) == "string") content_ids.push(ObjectID.createFromHexString(this.contents[i]));
+      else content_ids.push(this.contents[i]);
     }
     return {_id: this._id, name: this.name, description: this.description, exits: this.exits, contents: content_ids, editX: this.editX, editY: this.editY};
   },
@@ -77,10 +80,15 @@ Room = function(name, db) {
 Room.load = function(roomData, db) {
   if (!roomData.contents) roomData.contents = [];
   var objContents = []; // Load in objects for the room
+  console.log(roomData);
+  console.log("Loading room: " + roomData.contents);
   for (i in roomData.contents) {
     var id = roomData.contents[i];
+    if (typeof(id) == "string") id = ObjectID.createFromHexString(id);
     if (id instanceof ObjectID) {
-      objContents.push(Entity.all[id]);
+      var entity = Entity.all[id];
+      objContents.push(entity);
+      console.log("Loaded: " + entity);
     }
   }
   roomData.contents = objContents;
