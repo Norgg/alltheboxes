@@ -52,13 +52,17 @@ var RoomMethods = {
   },
 
   save: function(callback) {
+    if (!callback) callback = function(err, room) { if (err) console.log(err); };
+    this.db.save(this.data(), callback);
+  },
+
+  data: function() {
     var content_ids = [];
     console.log("Saving room.");
     for (i in this.contents) {
       content_ids.push(this.contents[i]._id);
     }
-    var data = {_id: this._id, name: this.name, description: this.description, exits: this.exits, contents: content_ids, editX: this.editX, editY: this.editY};
-    this.db.save(data, callback);
+    return {_id: this._id, name: this.name, description: this.description, exits: this.exits, contents: content_ids, editX: this.editX, editY: this.editY};
   },
 };
 

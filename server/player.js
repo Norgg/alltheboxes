@@ -262,7 +262,12 @@ var PlayerMethods = {
   sendWorld: function() {
     console.log("Editor joined.");
     this.socket.join("_editor");
-    this.socket.emit("world", Room.all);
+    var rooms = {};
+    for (i in Room.all) {
+      var room = Room.all[i];
+      rooms[room._id] = room.data();
+    }
+    this.socket.emit("world", rooms);
   },
 
   editRoom: function(room) {
@@ -275,7 +280,7 @@ var PlayerMethods = {
     Room.all[room._id] = room;
     room.save();
     this.socket.emit("roomSaved", room._id)
-    this.socket.broadcast.to('_editor').emit('roomUpdated', room);
+    this.socket.broadcast.to('_editor').emit('roomUpdated', room.data());
   },
 
   moveRoom: function(roomData) {
@@ -283,7 +288,7 @@ var PlayerMethods = {
     room.editX = roomData.editX;
     room.editY = roomData.editY;
     room.save();
-    this.socket.broadcast.to('_editor').emit('roomMoved', room);
+    this.socket.broadcast.to('_editor').emit('roomMoved', room.data());
   },
 
   destroyRoom: function(roomId) {
