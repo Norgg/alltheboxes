@@ -27,9 +27,14 @@ var PlayerMethods = {
       func: function(data) { this.describe(data); },
       level: "admin",
     },
+    descitem: {
+      desc: "Describe an item here.",
+      func: function(data) { this.describeItem(data); },
+      level: "admin",
+    },
     look: {
       desc: "Look around.",
-      func: function(data) { this.look(); },
+      func: function(data) { this.look(data); },
       level: "all",
     },
     make: {
@@ -153,6 +158,19 @@ var PlayerMethods = {
     this.room.save();
     this.sendMessages("Description set", this.entity.name + ' set the description');
   },
+  
+  describeItem: function(desc) {
+    for (i in this.room.contents) {
+      var item = this.room.contents[i];
+      var idx = desc.indexOf(item.name+" ");
+      if (idx == 0) {
+        item.description = desc.slice(item.name.length+1);
+        item.save();
+        this.sendMessages(item.name + " description set");
+        return;
+      }
+    }
+  },
 
   createItem: function(itemName) {
     var self = this;
@@ -211,10 +229,21 @@ var PlayerMethods = {
     return contents;
   },
 
-  look: function() {
-    if (!this.room) return "You don't seem to be anywhere...";
-    this.refreshRoom();
-    this.sendMessages(this.room.describe());
+  look: function(data) {
+    if (!this.room) {
+      this.sendMessages("You don't seem to be anywhere...");
+      return;
+    }
+    if (data) {
+      for (i in this.room.contents) {
+        if (this.room.contents[i].name == data) {
+          this.sendMessages(this.room.contents[i].description);
+        }
+      }
+    } else {
+      this.refreshRoom();
+      this.sendMessages(this.room.describe());
+    }
   },
 
   refreshRoom: function() {
@@ -277,7 +306,6 @@ var PlayerMethods = {
     if (!Room.all[room._id]) return;
     if (Room.all[room._id].name == "Home" && room.name != "Home") return; //Protect name of Home.
 
-    console.log(room);
     Room.load(room, this.world.roomsDB);
     Room.all[room._id] = room;
     room.save();

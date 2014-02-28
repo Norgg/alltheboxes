@@ -25,7 +25,7 @@ var Entity = function(name, type, db) {
   this.name = name;
   this.type = type._id;
   this.contents = [];
-  this.description = "";
+  this.description = "Something nondescript.";
   this.player = false;
 };
 

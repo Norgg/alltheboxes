@@ -59,7 +59,6 @@ var RoomMethods = {
 
   data: function() {
     var content_ids = [];
-    console.log("Saving room.");
     for (i in this.contents) {
       if (this.contents[i]._id) content_ids.push(this.contents[i]._id);
       else if (typeof(this.contents[i]) == "string") content_ids.push(ObjectID.createFromHexString(this.contents[i]));
@@ -80,15 +79,12 @@ Room = function(name, db) {
 Room.load = function(roomData, db) {
   if (!roomData.contents) roomData.contents = [];
   var objContents = []; // Load in objects for the room
-  console.log(roomData);
-  console.log("Loading room: " + roomData.contents);
   for (i in roomData.contents) {
     var id = roomData.contents[i];
     if (typeof(id) == "string") id = ObjectID.createFromHexString(id);
     if (id instanceof ObjectID) {
       var entity = Entity.all[id];
       objContents.push(entity);
-      console.log("Loaded: " + entity);
     }
   }
   roomData.contents = objContents;
