@@ -49,14 +49,9 @@ var ClientMethods = {
     }
   },
 
-  setName: function(data) {
-    //console.log("Storing name: " + data);
-    $.cookie('name', data);
-  },
-
-  setRoom: function(data) {
+  setID: function(data) {
     //console.log("Storing room: " + data);
-    $.cookie('room', data);
+    $.cookie('id', data);
   },
 
   setContents: function(data) {
@@ -73,17 +68,9 @@ var ClientMethods = {
   onConnect: function(evt) {
     //TODO: Move this onto the server and have it save and replay recent history per location if there's an item there recording it.
     this.output.html(window.localStorage.log.slice(-this.bufSize));
-    this.addOutput({text: "Hello at " + new Date().toUTCString()});
+    this.addOutput({text: "Logging in at " + new Date().toUTCString()});
     
-    //console.log("Connected");
-    if ($.cookie('name')) {
-      this.socket.emit('cmd', 'name ' + $.cookie('name'));
-    }
-    if ($.cookie('room')) {
-      this.socket.emit('cmd', 'join ' + $.cookie('room'));
-    } else {
-      this.socket.emit('cmd', 'join home');
-    }
+    this.socket.emit('login', $.cookie('id'));
   },
   
   onDisconnect: function(evt) {
@@ -157,8 +144,7 @@ var Client = function() {
   else url = location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: '');
   this.socket = io.connect(url);
   this.socket.on('output', function (data) { self.addOutput(data); });
-  this.socket.on('name', function(data) { self.setName(data); });
-  this.socket.on('room', function(data) { self.setRoom(data); });
+  this.socket.on('_id', function(data) { self.setID(data); });
   this.socket.on('connect', function(evt) { self.onConnect(evt); });
   this.socket.on('disconnect', function(evt) { self.onDisconnect(evt); });
   this.socket.on('refresh', function(evt) { window.location.reload(true); });

@@ -7,13 +7,13 @@ var EntityMethods = {
     }
     
     this.db.save(
-      {_id: this._id, name: this.name, description: this.description, contents: content_ids}, 
+      {_id: this._id, name: this.name, description: this.description, contents: content_ids, player: this.player}, 
       function(err, entity) {
         if (err) {
           console.log(err);
         } else {
           if (!self._id) self._id = entity._id;
-          callback(err, self);
+          if (callback) callback(err, self);
         }
       }
     );
@@ -51,7 +51,7 @@ Entity.loadAll = function(db, callback) {
     } else {
       Entity.all = {}
       entities.forEach(function(entity) {
-        Entity.load(entity);
+        Entity.load(entity, db);
         Entity.all[entity._id] = entity;
       });
       callback();

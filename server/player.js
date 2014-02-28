@@ -1,3 +1,5 @@
+var Entity = require('./entity').Entity;
+
 var PlayerMethods = {
   commands: { 
     help: {
@@ -37,7 +39,7 @@ var PlayerMethods = {
     },
     destroy: {
       desc: "Destroy an object.",
-      func: function(data) { this.destroyItem(data); },
+      func: function(data) { this.removeItem(data); },
       level: "admin",
     },
     auth: {
@@ -50,8 +52,8 @@ var PlayerMethods = {
   chat: function(data) {
     var msg = data;
 
-    this.sendMessages(msg, msg, {user: this.name});
-    console.log(new Date().toUTCString() + " [" + this.name + "] " + data);
+    this.sendMessages(msg, msg, {user: this.entity.name});
+    console.log(new Date().toUTCString() + " [" + this.entity.name + "] " + data);
   },
 
   cmd: function(data) {
@@ -70,7 +72,7 @@ var PlayerMethods = {
     } else {
       this.sendMessages("Unknown command: " + commandName);
     }
-    console.log(new Date().toUTCString() + " [" + this.name + "] /" + data);
+    console.log(new Date().toUTCString() + " [" + this.entity.name + "] /" + data);
   },
 
   sendMessages: function(userMessage, roomMessage, extra, roomExtra) {
@@ -87,15 +89,17 @@ var PlayerMethods = {
 
   setName: function(name) {
     if (!name) this.sendMessage('Change name to what?');
-    var oldNick = this.name;
-    this.name = name;
-    this.sendMessages('Hi ' + this.name, oldNick + ' is now ' + this.name + ".", {contents: this.getContents(true)});
+    var oldNick = this.entity.name;
+    this.entity.name = name;
+    this.entity.save();
+    this.sendMessages('Hi ' + this.entity.name, oldNick + ' is now ' + this.entity.name + ".", {contents: this.getContents(true)});
     this.socket.emit('name', name);
   },
 
   join: function(roomId) {
+    console.log("joining: " + roomId);
     var self = this;
-    if (!roomId) return ['Join where?'];
+    //if (!roomId) return ['Join where?'];
     if (this.room && roomId == this.room._id) return ['Already there.'];
     var room = Room.all[roomId];
 
@@ -104,11 +108,20 @@ var PlayerMethods = {
       if (oldRoom) {
         self.socket.leave(oldRoom._id);
         self.sendMessages(null, null, {contents: self.getContents(false)});
+        self.room.removeItem(self.entity);
       }
       self.room = room;
-      self.socket.join(self.room._id);
-      self.sendMessages(self.room.describe(), self.name + ' entered.', {joined: self.room.name, contents: self.getContents(true)}, {contents: self.getContents(true)});
-      self.socket.emit('room', roomId);
+      self.room.addItem(self.entity, function(err, item) {
+        if (err) {
+          console.log(err);
+        } else {
+          self.socket.join(self.room._id);
+          self.sendMessages(self.room.describe(), self.entity.name + ' entered.', {joined: self.room.name, contents: self.getContents(true)}, {contents: self.getContents(true)});
+          self.socket.emit('room', roomId);
+          self.entity.roomid = room._id;
+          self.entity.save();
+        }
+      });
     } else {
       self.sendMessages("Help, no such room: " + roomId);
       if (!self.room) {
@@ -128,7 +141,7 @@ var PlayerMethods = {
   go: function(exit) {
     this.refreshRoom();
     if (this.room && this.room.exits[exit]) {
-      this.sendMessages(null, this.name + " went " + exit + ".");
+      this.sendMessages(null, this.entity.name + " went " + exit + ".");
       this.join(this.room.exits[exit]);
     } else {
       this.sendMessages("Couldn't go " + exit);
@@ -138,7 +151,7 @@ var PlayerMethods = {
   describe: function(desc) {
     this.room.description = desc;
     this.room.save();
-    this.sendMessages("Description set", this.name + ' set the description');
+    this.sendMessages("Description set", this.entity.name + ' set the description');
   },
 
   createItem: function(itemName) {
@@ -149,13 +162,13 @@ var PlayerMethods = {
     }
     this.room.createItem(itemName, this.world.entitiesDB, function() {
       console.log(self.getContents(true));
-      self.sendMessages(itemName + " created.", self.name + " created " + itemName, {contents: self.getContents(true)});
+      self.sendMessages(itemName + " created.", self.entity.name + " created " + itemName, {contents: self.getContents(true)});
     });
   },
 
-  destroyItem: function(itemName) {
-    if (this.room.destroyItem(itemName)) {
-      this.sendMessages(itemName + " destroyed.", this.name + " destroyed " + itemName, {contents: this.getContents(true)});
+  removeItem: function(itemName) {
+    if (this.room.removeItem(itemName)) {
+      this.sendMessages(itemName + " destroyed.", this.entity.name + " destroyed " + itemName, {contents: this.getContents(true)});
       this.saveRoom();
     } else {
       this.sendMessages("There's no " + itemName + " here.");
@@ -163,8 +176,11 @@ var PlayerMethods = {
   },
 
   disconnect: function() {
-    this.sendMessages(null, this.name + ' evaporated.', {contents: this.getContents(false)});
-    if (this.room) this.saveRoom();
+    this.entity.connected = false;
+    if (this.room) {
+      this.saveRoom();
+      this.sendMessages("", "", null, {contents: this.getContents(true)});
+    }
   },
 
   saveRoom: function() {
@@ -181,14 +197,13 @@ var PlayerMethods = {
     var self=this;
     if (!this.room) return;
     var contents = [];
-    this.io.sockets.clients(this.room._id).forEach(function(socket) {
-      if (includeSelf || socket != self.socket) {
-        contents.push({name: "~"+socket.player.name});
-      }
-    });
 
     this.room.contents.forEach(function(entity) {
-      contents.push({name: entity.name, description: entity.description});
+      var n = entity.name;
+      if (entity.player && entity.connected) {
+        n = "~"+n;
+      }
+      contents.push({name: n, description: entity.description});
     });
 
     return contents;
@@ -222,14 +237,24 @@ var PlayerMethods = {
   },
 
   login: function(data) {
+    var self = this;
     if (Entity.all[data]) {
+      console.log("Logged in existing player");
       this.entity = Entity.all[data];
+      this.entity.player = true;
+      this.entity.connected = true;
       this.socket.emit("_id", this.entity._id);
+      this.join(this.entity.roomid);
     } else {
-      this.entity = new Entity(this.name, {_id: 123}, this.world.entitiesDB);
+      // New player.
+      console.log("Logged in new player" + this.world.entitiesDB);
+      this.entity = new Entity('anon' + Math.floor(Math.random()*1000), {_id: 123}, this.world.entitiesDB);
+      this.entity.player = true;
+      this.entity.connected = true;
       this.entity.save(function(){
-        this.socket.emit("_id", this.entity._id);
+        self.socket.emit("_id", self.entity._id);
       });
+      this.join(null);
     }
   },
 
@@ -298,8 +323,6 @@ var Player = function(socket, io, db, world) {
   this.db = db;
   this.world = world;
   this.admin = false;
-
-  this.name = 'anon' + Math.floor(Math.random()*1000);
 
   socket.on('chat',        function (data) { self.chat(data); });
   socket.on('cmd',         function(data) { self.cmd(data); });

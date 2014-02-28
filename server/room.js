@@ -24,11 +24,15 @@ var RoomMethods = {
   },
 
   addItem: function(item, callback) {
-    this.contents.push(item);
-    this.save(callback);
+    if (this.contents.indexOf(item) < 0) {
+      this.contents.push(item);
+      this.save(callback);
+    } else {
+      callback(null, this);
+    }
   },
 
-  destroyItem: function(itemName) {
+  removeItem: function(itemName) { // TODO: Base this on item id or something.
     return this.contents.some(function(item, index) {
       if (item.name == itemName) {
         this.contents.splice(index, 1)
