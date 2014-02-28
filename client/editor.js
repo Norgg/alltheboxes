@@ -105,12 +105,6 @@ var RoomEditorMethods = {
 
     newExit.keydown(newExitKeyUp);
 
-    /******* CONTENTS *******/
-    table.append(self.row("<b>contents</b>"));
-    self.data.contents.forEach(function(item) {
-      table.append(self.row(item.name));
-    });
-
     var saveButton = $('<input type="submit" class="save" value="save"/>');
    
     var destroyButton = $('<button class="destroy">destroy</button>');
