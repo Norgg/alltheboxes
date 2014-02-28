@@ -166,10 +166,11 @@ var PlayerMethods = {
       if (idx == 0) {
         item.description = desc.slice(item.name.length+1);
         item.save();
-        this.sendMessages(item.name + " description set");
+        this.sendMessages(item.name + " description set", this.entity.name + " described " + item.name);
         return;
       }
     }
+    this.sendMessages("Couldn't find item to describe for: " + desc);
   },
 
   createItem: function(itemName) {

@@ -7,7 +7,7 @@ var EntityMethods = {
     }
     
     this.db.save(
-      {_id: this._id, name: this.name, description: this.description, contents: content_ids, player: this.player}, 
+      {_id: this._id, name: this.name, description: this.description, contents: content_ids, player: this.player, roomid: this.roomid}, 
       function(err, entity) {
         if (err) {
           console.log(err);
