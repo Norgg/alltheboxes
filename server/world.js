@@ -36,7 +36,6 @@ var WorldMethods = {
     var self = this;
     console.log("Destroying " + roomId);
     var room = Room.all[roomId];
-    console.log(room);
     this.roomsDB.remove({'_id': room._id}, true, function(err) {
       if (err) {
         console.log(err);
@@ -82,21 +81,7 @@ World = function(roomsDB, entitiesDB, typesDB, callback) {
   this.roomsDB = roomsDB;
   this.entitiesDB = entitiesDB;
   this.typesDB = typesDB;
-  //roomsDB.remove(function(){});
-  entitiesDB.find().toArray(function(err, entities) {
-    if (err) {
-      //TODO: Probably need to quit if this happens.
-      console.log(err);
-    } else {
-      self.entities = {}
-      entities.forEach(function(entity) {
-        Entity.load(entity);
-        self.entities[entity._id] = entity;
-        console.log("Loaded " + entity.name)
-      });
-    }
-  });
-
+  
   Entity.loadAll(entitiesDB, function() {
     Room.loadAll(roomsDB, callback);
   });

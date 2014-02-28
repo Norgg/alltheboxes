@@ -1,5 +1,6 @@
 var EntityMethods = {
   save: function(callback) {
+    var self = this;
     var content_ids = [];
     for (i in this.contents) {
       content_ids.push(this.contents[i]._id);
@@ -7,18 +8,25 @@ var EntityMethods = {
     
     this.db.save(
       {_id: this._id, name: this.name, description: this.description, contents: content_ids}, 
-      callback
+      function(err, entity) {
+        if (err) {
+          console.log(err);
+        } else {
+          if (!self._id) self._id = entity._id;
+          callback(err, self);
+        }
+      }
     );
   },
 };
 
 var Entity = function(name, type, db) {
-  console.log(db);
   this.db = db;
   this.name = name;
   this.type = type._id;
   this.contents = [];
   this.description = "";
+  this.player = false;
 };
 
 Entity.load = function(entityData, db) {
@@ -45,7 +53,6 @@ Entity.loadAll = function(db, callback) {
       entities.forEach(function(entity) {
         Entity.load(entity);
         Entity.all[entity._id] = entity;
-        console.log("Loaded " + entity.name);
       });
       callback();
     }

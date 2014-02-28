@@ -3,6 +3,7 @@ var Entity = require('./entity.js').Entity
 
 var RoomMethods = {
   createItem: function(itemName, entitiesDB, callback) {
+    console.log("Creating item in " + this.name);
     var self = this;
     var itemData = new Entity(itemName, {_id:123}, entitiesDB);
     itemData.save(function(err, item){
@@ -11,7 +12,6 @@ var RoomMethods = {
       } else {
         console.log("Item saved, adding to contents: " + item._id);
         self.contents.push(item);
-        console.log(self.contents);
         self.save(function(err, i) {
           if (err) {
             console.log(err);
@@ -21,6 +21,11 @@ var RoomMethods = {
         });
       }
     });
+  },
+
+  addItem: function(item, callback) {
+    this.contents.push(item);
+    this.save(callback);
   },
 
   destroyItem: function(itemName) {
@@ -46,12 +51,9 @@ var RoomMethods = {
     var content_ids = [];
     console.log("Saving room.");
     for (i in this.contents) {
-      console.log("Item: " + this.contents[i]);
       content_ids.push(this.contents[i]._id);
     }
-    console.log("Content ids: " + content_ids);
     var data = {_id: this._id, name: this.name, description: this.description, exits: this.exits, contents: content_ids, editX: this.editX, editY: this.editY};
-    console.log(data);
     this.db.save(data, callback);
   },
 };
@@ -66,8 +68,6 @@ Room = function(name, db) {
 
 Room.load = function(roomData, db) {
   if (!roomData.contents) roomData.contents = [];
-  console.log("Loading contents: ");
-  console.log(roomData.contents);
   var objContents = []; // Load in objects for the room
   for (i in roomData.contents) {
     var id = roomData.contents[i];
@@ -94,7 +94,7 @@ Room.loadAll = function(db, callback) {
       rooms.forEach(function(room) {
         Room.load(room, db);
         Room.all[room._id] = room;
-        console.log("Loaded " + room.name);
+        //console.log("Loaded " + room.name);
       });
       callback();
     }

@@ -137,7 +137,7 @@ var PlayerMethods = {
 
   describe: function(desc) {
     this.room.description = desc;
-    this.world.saveRoom(this.room);
+    this.room.save();
     this.sendMessages("Description set", this.name + ' set the description');
   },
 
@@ -148,6 +148,7 @@ var PlayerMethods = {
       return;
     }
     this.room.createItem(itemName, this.world.entitiesDB, function() {
+      console.log(self.getContents(true));
       self.sendMessages(itemName + " created.", self.name + " created " + itemName, {contents: self.getContents(true)});
     });
   },
@@ -187,7 +188,7 @@ var PlayerMethods = {
     });
 
     this.room.contents.forEach(function(entity) {
-      contents.push(entity);
+      contents.push({name: entity.name, description: entity.description});
     });
 
     return contents;
@@ -220,6 +221,18 @@ var PlayerMethods = {
     }
   },
 
+  login: function(data) {
+    if (Entity.all[data]) {
+      this.entity = Entity.all[data];
+      this.socket.emit("_id", this.entity._id);
+    } else {
+      this.entity = new Entity(this.name, {_id: 123}, this.world.entitiesDB);
+      this.entity.save(function(){
+        this.socket.emit("_id", this.entity._id);
+      });
+    }
+  },
+
   /******* Editor functions, TODO: Move these elsewhere. Seriously. *******/
   sendWorld: function() {
     console.log("Editor joined.");
@@ -233,7 +246,7 @@ var PlayerMethods = {
     if (Room.all[room._id].name == "Home" && room.name != "Home") return; //Protect name of Home.
 
     console.log(room);
-    Room.load(room);
+    Room.load(room, this.world.roomsDB);
     Room.all[room._id] = room;
     room.save();
     this.socket.emit("roomSaved", room._id)
@@ -290,6 +303,7 @@ var Player = function(socket, io, db, world) {
 
   socket.on('chat',        function (data) { self.chat(data); });
   socket.on('cmd',         function(data) { self.cmd(data); });
+  socket.on('login',       function(data) { self.login(data); });
   socket.on('disconnect',  function() { self.disconnect(); });
 
   socket.on('getWorld',    function() { self.sendWorld(); });
