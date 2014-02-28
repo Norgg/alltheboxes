@@ -60,3 +60,7 @@ body {
 .name {
   color: #777;
 }
+
+.roomname {
+  font-weight: bold;
+}

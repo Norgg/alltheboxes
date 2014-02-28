@@ -1,4 +1,5 @@
-var Room = require('./room').Room
+var Room = require('./room').Room;
+var Entity = require('./entity').Entity;
 var ObjectID = require('mongodb').ObjectID;
 
 var WorldMethods = {
@@ -10,7 +11,7 @@ var WorldMethods = {
     //TODO: Change this to support creating non-uniquely named rooms.
     var self = this;
     console.log("Creating " + roomName);
-    var newRoom = new Room(roomName);
+    var newRoom = new Room(roomName, this.roomsDB);
     self.roomsDB.insert(newRoom, {safe: true}, function(err, rooms) {
       if (err) {
         console.log(err);
@@ -34,7 +35,7 @@ var WorldMethods = {
   destroyRoom: function(roomId, callback) {
     var self = this;
     console.log("Destroying " + roomId);
-    var room = this.rooms[roomId];
+    var room = Room.all[roomId];
     console.log(room);
     this.roomsDB.remove({'_id': room._id}, true, function(err) {
       if (err) {
@@ -47,30 +48,57 @@ var WorldMethods = {
     });
   },
 
-  saveRoom: function(room, callback) {
-    console.log("saving: " + room._id);
-    if (!callback) callback = function(err, rooms) {if (err) console.log(err); else console.log(room.name + " saved");};
-    this.roomsDB.save(room, callback);
+  createEntity: function(name, type, callback) {
+    console.log("Creating a " + type + " called \"" + name + "\"");
+
+    var self = this;
+    var newEntity = new Entity(name);
+    self.entitiesDB.insert(newEntity, {safe: true}, function(err, entities) {
+      if (err) {
+        console.log(err);
+        callback(err, null);
+      } else {
+        self.roomsDB.findOne({name: name}, function(err, entity) {
+          if (err) {
+            console.log(err);
+            callback(err, null);
+          } else if (entity) {
+            Entity.load(entity);
+            console.log(entity + " created.");
+            self.entities[entity._id] = entity;
+            callback(null, entity);
+          }
+        });
+      }
+    });
+
+    return entity;
   },
 
 };
 
-World = function(roomsDB, callback) {
+World = function(roomsDB, entitiesDB, typesDB, callback) {
   var self = this;
   this.roomsDB = roomsDB;
+  this.entitiesDB = entitiesDB;
+  this.typesDB = typesDB;
   //roomsDB.remove(function(){});
-  roomsDB.find().toArray(function(err, rooms) {
+  entitiesDB.find().toArray(function(err, entities) {
     if (err) {
+      //TODO: Probably need to quit if this happens.
       console.log(err);
     } else {
-      self.rooms = {};
-      rooms.forEach(function(room) {
-        Room.load(room);
-        self.rooms[room._id] = room;
-        console.log("Loaded " + room.name);
+      self.entities = {}
+      entities.forEach(function(entity) {
+        Entity.load(entity);
+        self.entities[entity._id] = entity;
+        console.log("Loaded " + entity.name)
       });
-      callback();
     }
+  });
+
+  Entity.loadAll(entitiesDB, function() {
+    Room.loadAll(roomsDB, callback);
   });
 };
 

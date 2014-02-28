@@ -1,13 +1,20 @@
 var ClientMethods = {
   addOutput: function(data) {
     console.log(data);
+    var msg = "";
+    
+    if (data.user) {
+      msg = '~<span class="name">'+escapeHTML(data.user)+"</span>: ";
+    }
+    if (data.joined) {
+      msg = '<span class="roomname">'+escapeHTML(data.joined)+"</span>\n";
+    }
+    if (data.contents) {
+      this.setContents(data.contents);
+    }
+    
     if (data.text) {
-      var msg = "";
-      if (data.user) {
-        msg = '~<span class="name">'+escapeHTML(data.user)+"</span>: ";
-      }
       msg += escapeHTML(data.text)+"\n";
-  
       this.output.append(msg);
       
       var text = this.output.text();
@@ -20,11 +27,6 @@ var ClientMethods = {
 
       this.output.linkify();
     }
-
-    if (data.contents) {
-      this.setContents(data.contents);
-    }
-    
 
     if (!document.hasFocus()) document.title = "*alltheboxes";
   },

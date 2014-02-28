@@ -19,13 +19,19 @@ new MongoClient(new MongoServer('localhost', 27017)).open(function(err, mongo) {
     if(err) {
       console.log(err);
     } else {
-      rooms.ensureIndex({'name': 1}, {unique: true, dropDups: true}, function(err) {
+      mongodb.collection('entities', function(err, entities) {
         if(err) {
           console.log(err);
         } else {
-          world = new World(rooms, function() {
-            app.listen(8080);
-            console.log("Started.");
+          mongodb.collection('types', function(err, types) {
+            if(err) {
+              console.log(err);
+            } else {
+              world = new World(rooms, entities, types, function() {
+                app.listen(8080);
+                console.log("Started.");
+              });
+            }
           });
         }
       });

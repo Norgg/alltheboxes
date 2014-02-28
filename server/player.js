@@ -2,35 +2,48 @@ var PlayerMethods = {
   commands: { 
     help: {
       desc: "Get help.",
-      func: function(data) { this.help(); }
+      func: function(data) { this.help(); },
+      level: "all"
     },
     name: {
       desc: "Set name.",
-      func: function(data) { this.setName(data); }
+      func: function(data) { this.setName(data); },
+      level: "all",
     },
     go: {
       desc: "Go through an exit.",
-      func: function(data) { this.go(data); }
+      func: function(data) { this.go(data); },
+      level: "all",
     },
     join: {
       desc: "Teleport to a place.",
-      func: function(data) { this.join(data); }
+      func: function(data) { this.join(data); },
+      level: "all",
     },
     desc: {
       desc: "Describe this place.",
-      func: function(data) { this.describe(data); }
+      func: function(data) { this.describe(data); },
+      level: "admin",
     },
     look: {
       desc: "Look around.",
-      func: function(data) { this.look(); }
+      func: function(data) { this.look(); },
+      level: "all",
     },
     make: {
       desc: "Create an object.",
-      func: function(data) { this.createItem(data); }
+      func: function(data) { this.createItem(data); },
+      level: "all",
     },
     destroy: {
       desc: "Destroy an object.",
-      func: function(data) { this.destroyItem(data); }
+      func: function(data) { this.destroyItem(data); },
+      level: "admin",
+    },
+    auth: {
+      desc: "Become good.",
+      func: function(data) { this.auth(data); },
+      level: "all",
     }
   },
 
@@ -49,20 +62,27 @@ var PlayerMethods = {
     var command = this.commands[commandName];
     
     if (command) {
-      command.func.call(this, remaining);
+      if (command.level == "all" || this.admin) {
+        command.func.call(this, remaining);
+      } else {
+        this.sendMessages("No, bad.");
+      }
     } else {
       this.sendMessages("Unknown command: " + commandName);
     }
     console.log(new Date().toUTCString() + " [" + this.name + "] /" + data);
   },
 
-  sendMessages: function(userMessage, roomMessage, extra) {
+  sendMessages: function(userMessage, roomMessage, extra, roomExtra) {
     var data = extra || {};
     data.text = userMessage;
     //console.log(data.text);
     if (userMessage || extra) this.socket.emit('output', data);
+    
+    if (!roomExtra) roomExtra = extra;
+    var data = roomExtra || {};
     data.text = roomMessage;
-    if ((roomMessage || extra) && this.room) this.socket.broadcast.to(this.room.name).emit('output', data);
+    if ((roomMessage || roomExtra) && this.room) this.socket.broadcast.to(this.room._id).emit('output', data);
   },
 
   setName: function(name) {
@@ -77,7 +97,7 @@ var PlayerMethods = {
     var self = this;
     if (!roomId) return ['Join where?'];
     if (this.room && roomId == this.room._id) return ['Already there.'];
-    var room = this.world.rooms[roomId];
+    var room = Room.all[roomId];
 
     if (room) {
       var oldRoom = self.room;
@@ -87,8 +107,7 @@ var PlayerMethods = {
       }
       self.room = room;
       self.socket.join(self.room._id);
-      var msg = 'Entered ' + self.room.name + ".\n" + self.room.describe();
-      self.sendMessages(msg, self.name + ' entered.', {contents: self.getContents(true)});
+      self.sendMessages(self.room.describe(), self.name + ' entered.', {joined: self.room.name, contents: self.getContents(true)}, {contents: self.getContents(true)});
       self.socket.emit('room', roomId);
     } else {
       self.sendMessages("Help, no such room: " + roomId);
@@ -123,12 +142,14 @@ var PlayerMethods = {
   },
 
   createItem: function(itemName) {
+    var self = this;
     if (!itemName) {
       this.sendMessages("Make what?");
       return;
     }
-    this.room.createItem(itemName);
-    this.sendMessages(itemName + " created.", this.name + " created " + itemName, {contents: this.getContents(true)});
+    this.room.createItem(itemName, this.world.entitiesDB, function() {
+      self.sendMessages(itemName + " created.", self.name + " created " + itemName, {contents: self.getContents(true)});
+    });
   },
 
   destroyItem: function(itemName) {
@@ -147,7 +168,7 @@ var PlayerMethods = {
 
   saveRoom: function() {
     var self = this;
-    this.world.saveRoom(this.room, function(err, room) {
+    this.room.save(function(err, room) {
       if (err) {
         console.log(err);
       }
@@ -179,7 +200,7 @@ var PlayerMethods = {
   },
 
   refreshRoom: function() {
-    if (this.room) this.room = this.world.rooms[this.room._id];
+    if (this.room) this.room = Room.all[this.room._id];
   },
   
   help: function() {
@@ -190,31 +211,40 @@ var PlayerMethods = {
     this.sendMessages(msg);
   },
 
+  auth: function(data) {
+    if (data == "dumbkoala") {
+      this.admin = true;
+      this.sendMessages("Authed.");
+    } else {
+      this.sendMessages("Wrong.");
+    }
+  },
+
   /******* Editor functions, TODO: Move these elsewhere. Seriously. *******/
   sendWorld: function() {
     console.log("Editor joined.");
     this.socket.join("_editor");
-    this.socket.emit("world", this.world.rooms);
+    this.socket.emit("world", Room.all);
   },
 
   editRoom: function(room) {
     //TODO: Error messages for these?
-    if (!this.world.rooms[room._id]) return;
-    if (this.world.rooms[room._id].name == "Home" && room.name != "Home") return; //Protect name of Home.
+    if (!Room.all[room._id]) return;
+    if (Room.all[room._id].name == "Home" && room.name != "Home") return; //Protect name of Home.
 
     console.log(room);
     Room.load(room);
-    this.world.rooms[room._id] = room;
-    this.world.saveRoom(room);
+    Room.all[room._id] = room;
+    room.save();
     this.socket.emit("roomSaved", room._id)
     this.socket.broadcast.to('_editor').emit('roomUpdated', room);
   },
 
   moveRoom: function(roomData) {
-    var room = this.world.rooms[roomData._id];
+    var room = Room.all[roomData._id];
     room.editX = roomData.editX;
     room.editY = roomData.editY;
-    this.world.saveRoom(room);
+    room.save();
     this.socket.broadcast.to('_editor').emit('roomMoved', room);
   },
 
@@ -254,6 +284,7 @@ var Player = function(socket, io, db, world) {
   this.socket.player = this;
   this.db = db;
   this.world = world;
+  this.admin = false;
 
   this.name = 'anon' + Math.floor(Math.random()*1000);
 
