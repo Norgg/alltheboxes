@@ -135,7 +135,15 @@ var PlayerMethods = {
           if (err) {
             console.log(err);
           } else {
-            self.join(home._id);
+            if (!home) {
+              console.log("Oh no, there's no Home location, making one.");
+              self.createRoom("Home", function(home){ 
+                self.join(home._id);
+                self.saveRoom();
+              });
+            } else { 
+              self.join(home._id);
+            }
           }
         });
 
@@ -331,7 +339,7 @@ var PlayerMethods = {
     });
   },
 
-  createRoom: function(roomName) {
+  createRoom: function(roomName, callback) {
     var self = this;
     if (!roomName) return;
     this.world.createRoom(roomName, function(err, room) {
@@ -347,6 +355,7 @@ var PlayerMethods = {
         room.editY = 200;
         self.socket.emit("roomMoved", room.data());
         self.socket.broadcast.to('_editor').emit('roomMoved', room.data());
+        callback(room);
       }
     });
   },
