@@ -113,7 +113,7 @@ var PlayerMethods = {
       if (oldRoom) {
         self.socket.leave(oldRoom._id);
         self.room.removeItem(self.entity.name);
-        self.sendMessages(null, null, {contents: self.getContents(false)});
+        self.sendMessages(null, null, null, {contents: self.getContents(false)});
       }
       self.room = room;
       self.room.addItem(self.entity, function(err, item) {
@@ -308,6 +308,7 @@ var PlayerMethods = {
     if (Room.all[room._id].name == "Home" && room.name != "Home") return; //Protect name of Home.
 
     Room.load(room, this.world.roomsDB);
+    room.contents = Room.all[room._id].contents;
     Room.all[room._id] = room;
     room.save();
     this.socket.emit("roomSaved", room._id)
@@ -338,13 +339,14 @@ var PlayerMethods = {
         //TODO: Send error message to editor, especially for duplicate name.
         console.log(err);
       } else {
-        self.socket.emit("roomCreated", room);
-        self.socket.broadcast.to('_editor').emit('roomCreated', room);
+        console.log("Created.");
+        self.socket.emit("roomCreated", room.data());
+        self.socket.broadcast.to('_editor').emit('roomCreated', room.data());
         
         room.editX = 200;
         room.editY = 200;
-        self.socket.emit("roomMoved", room);
-        self.socket.broadcast.to('_editor').emit('roomMoved', room);
+        self.socket.emit("roomMoved", room.data());
+        self.socket.broadcast.to('_editor').emit('roomMoved', room.data());
       }
     });
   },

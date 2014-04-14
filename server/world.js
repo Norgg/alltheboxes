@@ -11,8 +11,8 @@ var WorldMethods = {
     //TODO: Change this to support creating non-uniquely named rooms.
     var self = this;
     console.log("Creating " + roomName);
-    var newRoom = new Room(roomName, this.roomsDB);
-    self.roomsDB.insert(newRoom, {safe: true}, function(err, rooms) {
+    var newRoom = new Room(roomName, self.roomsDB);
+    self.roomsDB.insert(newRoom.data(), {safe: true}, function(err, rooms) {
       if (err) {
         console.log(err);
         callback(err, null);
@@ -22,9 +22,9 @@ var WorldMethods = {
             console.log(err);
             callback(err, null);
           } else if (room) {
-            Room.load(room);
+            Room.load(room, self.roomsDB);
             console.log(room.describe());
-            self.rooms[room._id] = room;
+            Room.all[room._id] = room;
             callback(null, room);
           }
         });

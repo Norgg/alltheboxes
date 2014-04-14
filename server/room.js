@@ -53,8 +53,9 @@ var RoomMethods = {
   },
 
   save: function(callback) {
-    if (!callback) callback = function(err, room) { if (err) console.log(err); };
-    this.db.save(this.data(), callback);
+    var cb = callback;
+    if (!cb) cb = function(err, room) { if (err) console.log(err); };
+    this.db.save(this.data(), cb);
   },
 
   data: function() {
