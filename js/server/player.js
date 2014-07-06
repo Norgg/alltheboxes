@@ -1,11 +1,36 @@
 var Entity = require('./entity').Entity;
 
 var PlayerMethods = {
-  commands: { 
+  commands: {
+    n: {
+      desc: "North",
+      func: function(data) { this.go("north"); },
+      level: "all"
+    },
+    e: {
+      desc: "East",
+      func: function(data) { this.go("east"); },
+      level: "all"
+    },
+    s: {
+      desc: "South",
+      func: function(data) { this.go("south"); },
+      level: "all"
+    },
+    w: {
+      desc: "West",
+      func: function(data) { this.go("west"); },
+      level: "all"
+    },
     help: {
       desc: "Get help.",
       func: function(data) { this.help(); },
       level: "all"
+    },
+    say: {
+      desc: "Say a thing.",
+      func: function(data) { this.chat(data); },
+      level: "all",
     },
     name: {
       desc: "Set name.",
@@ -66,7 +91,7 @@ var PlayerMethods = {
     var commandName = toks[0];
     var remaining = data.slice(commandName.length+1);
 
-    var command = this.commands[commandName];
+    var command = this.commands[commandName.toLowerCase()];
     
     if (command) {
       if (command.level == "all" || this.admin) {
@@ -278,6 +303,7 @@ var PlayerMethods = {
 
   login: function(data) {
     var self = this;
+    console.log(data);
     if (Entity.all[data]) {
       console.log("Logged in existing player");
       this.entity = Entity.all[data];

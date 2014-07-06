@@ -93,11 +93,12 @@ var ClientMethods = {
       if (inputText[0] == "/") {
         inputText = inputText.slice(1);
         this.socket.emit('cmd', inputText);
+        this.input.val("/");
       } else {
         this.socket.emit('chat', inputText);
+        this.input.val("");
       }
 
-      this.input.val("");
       this.historyIdx = -1;
       return false;
     } else if (evt.keyCode == 9) { //tab
@@ -156,6 +157,7 @@ var Client = function() {
   this.input = $('#input');
   this.output = $('#output');
   this.contents = $('#contents');
+  this.contents.hide();
   this.resize();
   this.input.keyup(function(evt) {self.keyup(evt);});
   this.input.keydown(function(evt) {self.keydown(evt);});
