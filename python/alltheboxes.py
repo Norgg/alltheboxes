@@ -1,21 +1,25 @@
-from server import Server
+from asyncio import get_event_loop
 
-from tornado.ioloop import IOLoop, PeriodicCallback
+from server import Server
 
 
 def main():
     world = None
     server = Server(world, 9876)
-    server.listen()
 
-    def update():
-        # world.update()
-        server.send_update()
+    loop = get_event_loop()
+    loop.run_until_complete(server.listen())
 
-    update_task = PeriodicCallback(update, 1000)
-    update_task.start()
+    # def update():
+    #      world.update()
+    #      server.send_update()
 
-    IOLoop.instance().start()
+    # update_task = PeriodicCallback(update, 1000)
+    # update_task.start()
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":
