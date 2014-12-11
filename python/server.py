@@ -36,7 +36,7 @@ class Server(object):
             (r'/', Index),
             (r'/ws', ClientConnection),
             (r'/(.*)', StaticFileHandler, {'path': '../js/client/'}),
-        ])
+        ], debug=True)
         self.application.server = self
 
         self.world = world
