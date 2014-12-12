@@ -4,6 +4,7 @@ from client import Client
 
 from editor import Editor
 
+
 from tornado.httpserver import HTTPServer
 from tornado.web import Application, RequestHandler, StaticFileHandler
 from tornado.websocket import WebSocketHandler
@@ -11,24 +12,19 @@ from tornado.websocket import WebSocketHandler
 
 class Index(RequestHandler):
     def get(self):
-        with open('../js/client/index.html') as index:
+        with open('../client/index.html') as index:
             self.write(index.read())
 
 
 class ClientConnection(WebSocketHandler):
     def open(self):
-        print("New connection.")
         self.application.server.clients.append(self)
         self.client = Client(self)
         self.editor = Editor(self)
 
     def on_message(self, message):
-        try:
-            data = json.loads(message)
-        except ValueError:
-            print("nope")
-        else:
-            self.client.on_message(data)
+        data = json.loads(message)
+        self.client.on_message(data)
 
     def on_close(self):
         self.application.server.clients.remove(self)
@@ -39,7 +35,7 @@ class Server(object):
         self.application = Application([
             (r'/', Index),
             (r'/ws', ClientConnection),
-            (r'/(.*)', StaticFileHandler, {'path': '../js/client/'}),
+            (r'/(.*)', StaticFileHandler, {'path': '../client/'}),
         ], debug=True)
         self.application.server = self
 
@@ -49,6 +45,7 @@ class Server(object):
         self.clients = []
 
     def listen(self):
+        print("Server listening on {}".format(self.port))
         self.http_server.listen(self.port)
 
     def send_update(self):
