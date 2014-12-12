@@ -11,7 +11,7 @@ from tornado.websocket import WebSocketHandler
 
 class Index(RequestHandler):
     def get(self):
-        with open('../js/client/index.html') as index:
+        with open('../client/index.html') as index:
             self.write(index.read())
 
 
@@ -39,7 +39,7 @@ class Server(object):
         self.application = Application([
             (r'/', Index),
             (r'/ws', ClientConnection),
-            (r'/(.*)', StaticFileHandler, {'path': '../js/client/'}),
+            (r'/(.*)', StaticFileHandler, {'path': '../client/'}),
         ], debug=True)
         self.application.server = self
 
