@@ -50,6 +50,7 @@ class Server(object):
 
     def listen(self):
         self.http_server.listen(self.port)
+        print("Listening on {}".format(self.port))
 
     def send_update(self):
         pass
