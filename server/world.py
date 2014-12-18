@@ -18,11 +18,14 @@ class World(object):
         yield self.db.query(open('schema.sql').read())
 
     @coroutine
-    def load(self):
-
+    def gen_test_data(self):
         yield Location(self, {'name': 'start'}).save()
         yield Location(self, {'name': 'end'}).save()
         yield Entity(self, {'name': 'bob'}).save()
+
+    @coroutine
+    def load(self):
+        yield self.gen_test_data()
 
         try:
             yield self.db.validate()
@@ -40,6 +43,12 @@ class World(object):
 
         print(self.locations)
         print(self.entities)
+
+    @coroutine
+    def make_location(self, name):
+        location = yield Location(self, {'name': name}).save()
+        self.locations[location.id] = location
+        return location
 
     def update(self):
         pass

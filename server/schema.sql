@@ -1,8 +1,13 @@
+-- Need to run this as a super to set up hstore:
+-- create extension hstore;
+
 drop table if exists locations cascade;
 
 create table locations (
     id serial primary key,
-    name text
+    name text,
+    edit_x int default 100,
+    edit_y int default 100
 );
 
 drop table if exists exits cascade;

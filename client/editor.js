@@ -1,341 +1,354 @@
 var RoomEditorMethods = {
-  //TODO: Split this up and move into the initialiser?
-  makeRoomBox: function() {
-    var self = this;
-    var editor = this.editor;
-    
-    var div = $('<div class="editbox">');
+    //TODO: Split this up and move into the initialiser?
+    makeRoomBox: function() {
+        var self = this;
+        var editor = this.editor;
 
-    div.mousedown(function() {
-      if (div.css('z-index') != editor.maxZ) {
-        div.css('z-index', ++editor.maxZ);
-      }
-    });
+        var div = $('<div class="editbox">');
 
-    div.draggable({
-      distance: 5,
-      appendTo: '#editor',
-      scroll: true,
-      start: function(evt, ui) {
-        editor.noclick = true;
-      },
-      drag: function(evt, ui) {
-        editor.drawLines();
-      },
-      stop: function(evt, ui) {
-        self.savePos();
-      },
-    });
-
-    div.droppable({
-      accept: ".exitTarget",
-      drop: function(evt, ui) {
-        console.log(ui.draggable.data("roomEditor"));
-        if (ui.draggable.data("exitInput").val()) {
-          ui.draggable.data("roomEditor").data.exits[ui.draggable.data("exitInput").val()] = self.data._id;
-        }
-        ui.draggable.data("targetName").text(self.data.name);
-        ui.draggable.data("roomEditor").editor.drawLines();
-      },
-    });
-
-    var head = $('<div class="roomHead">'); //Header, clicked on to expand.
-    head.append($('<h1 class="headTitle">' + this.data.name + '</h1>'));
-
-    head.click(function() {
-      if (editor.noclick) {
-        editor.noclick = false;
-      } else {
-        self.content.toggle(200, function(){
-          editor.drawLines();
+        div.mousedown(function() {
+            if (div.css('z-index') != editor.maxZ) {
+                div.css('z-index', ++editor.maxZ);
+            }
         });
-      }
-    });
 
-    this.content = $('<div class="roomContent">');
+        div.draggable({
+            distance: 5,
+            appendTo: '#editor',
+            scroll: true,
+            start: function(evt, ui) {
+                editor.noclick = true;
+            },
+            drag: function(evt, ui) {
+                editor.drawLines();
+            },
+            stop: function(evt, ui) {
+                self.savePos();
+            },
+        });
 
-    this.refreshContent();
-    
-    div.append(head);
-    div.append(this.content);
+        div.droppable({
+            accept: ".exitTarget",
+            drop: function(evt, ui) {
+                console.log(ui.draggable.data("roomEditor"));
+                if (ui.draggable.data("exitInput").val()) {
+                    ui.draggable.data("roomEditor").data.exits[ui.draggable.data("exitInput").val()] = self.data.id;
+                }
+                ui.draggable.data("targetName").text(self.data.name);
+                ui.draggable.data("roomEditor").editor.drawLines();
+            },
+        });
 
-    div.css('position', 'absolute');
-    div.offset({top: this.data.editY, left: this.data.editX});
-    
-    this.div = div;
+        var head = $('<div class="roomHead">'); //Header, clicked on to expand.
+        head.append($('<h1 class="headTitle">' + this.data.name + '</h1>'));
 
-    editor.editDiv.append(div);
-  },
+        head.click(function() {
+            if (editor.noclick) {
+                editor.noclick = false;
+            } else {
+                self.content.toggle(200, function(){
+                    editor.drawLines();
+                });
+            }
+        });
 
-  refreshContent: function() {
-    this.content.empty();
-    var self = this;
-    var form = $('<form>');
-    form.submit(function(evt) {
-      evt.preventDefault();
-      console.log(self.data);
-      self.div.find('.headTitle').text(self.data.name);
-      self.editor.socket.emit('editRoom', self.data);
-      return false;
-    });
-  
-    var table = $('<table>');
-    table.append(self.row("id:", '<input readonly value="' + self.data._id + '">'));
-    table.append(self.makeInput('name', self.data.name));
-    table.append(self.makeTextarea('description', self.data.description));
+        this.content = $('<div class="roomContent">');
 
-    /******** EXITS ********/
-    table.append(self.row("<b>exits</b>"));
-    for (exit in self.data.exits) {
-      table.append(self.makeExit(exit, self.data.exits[exit]));
-    }
+        this.refreshContent();
 
-    var newExit = self.makeExit('','');
-    table.append(newExit);
+        div.append(head);
+        div.append(this.content);
 
-    function newExitKeyUp(evt) {
-      if (!newExit.find('input').val()) return;
-      var newNewExit = self.makeExit('','');
-      newExit.after(newNewExit);
+        div.css('position', 'absolute');
+        div.offset({top: this.data.edit_y, left: this.data.edit_x});
 
-      newExit.unbind('keydown', newExitKeyUp);
-      newExit = newNewExit;
-      newExit.keydown(newExitKeyUp);
-    };
+        this.div = div;
 
-    newExit.keydown(newExitKeyUp);
+        editor.editDiv.append(div);
+    },
 
-    var saveButton = $('<input type="submit" class="save" value="save"/>');
-   
-    var destroyButton = $('<button class="destroy">destroy</button>');
-    destroyButton.click(function(evt) {
-      evt.preventDefault();
-      if (confirm("Sure?")) self.editor.socket.emit('destroyRoom', self.data._id);
-    });
+    refreshContent: function() {
+        this.content.empty();
+        var self = this;
+        var form = $('<form>');
+        form.submit(function(evt) {
+            evt.preventDefault();
+            console.log(self.data);
+            self.div.find('.headTitle').text(self.data.name);
+            self.editor.emit({'editRoom': self.data});
+            return false;
+        });
 
-    table.append(self.row(saveButton, destroyButton));
+        var table = $('<table>');
+        table.append(self.row("id:", '<input readonly value="' + self.data.id + '">'));
+        table.append(self.makeInput('name', self.data.name));
+        table.append(self.makeTextarea('description', self.data.description));
 
-    form.append(table);
-    this.content.append(form);
-  },
+        /******** EXITS ********/
+        table.append(self.row("<b>exits</b>"));
+        for (exit in self.data.exits) {
+            table.append(self.makeExit(exit, self.data.exits[exit]));
+        }
 
-  moveTo: function(x, y) {
-    this.data.editX = x;
-    this.data.editY = y;
-    this.div.animate({left: x, top: y}, 200);
-  },
+        var newExit = self.makeExit('','');
+        table.append(newExit);
 
-  savePos: function() {
-    var offset = this.div.offset();
-    this.data.editX = offset.left;
-    this.data.editY = offset.top;
-    this.editor.socket.emit('moveRoom', this.data);
-  },
+        function newExitKeyUp(evt) {
+            if (!newExit.find('input').val()) return;
+            var newNewExit = self.makeExit('','');
+            newExit.after(newNewExit);
 
-  row: function() {
-    var tr = $('<tr>');
-    Array.prototype.slice.call(arguments, 0).forEach(function(item) {
-      var td = $('<td>');
-      td.append(item);
-      tr.append(td);
-    });
-    return tr;
-  },
+            newExit.unbind('keydown', newExitKeyUp);
+            newExit = newNewExit;
+            newExit.keydown(newExitKeyUp);
+        };
 
-  makeInput: function(name, val) {
-    var self = this;
-    var input = $('<input>');
+        newExit.keydown(newExitKeyUp);
 
-    console.log(name + "=" + val);
-    if (name == "name" && val == "Home") input.attr('readonly', true);
+        var saveButton = $('<input type="submit" class="save" value="save"/>');
 
-    input.attr('name', name);
-    input.val(val);
-    input.keyup(function() { if (input.val()) self.data[name]=input.val(); });
-    return this.row(name+":", input);
-  },
+        var destroyButton = $('<button class="destroy">destroy</button>');
+        destroyButton.click(function(evt) {
+            evt.preventDefault();
+            if (confirm("Sure?")) self.editor.emit({'destroyRoom': self.data.id});
+        });
 
-  makeTextarea: function(name, val) {
-    var self = this;
-    var input = $('<textarea>');
-    input.attr('name', name);
-    input.text(val);
-    input.keyup(function() { self.data[name]=input.val(); });
-    return this.row(name+":", input);
-  },
+        table.append(self.row(saveButton, destroyButton));
 
-  makeExit: function(exit, target) {
-    var self = this;
-    var exitInput = $('<input>');
-    exitInput.attr('name', 'exit[]');
-    exitInput.val(exit);
-    exitInput.data('oldval', exit);
+        form.append(table);
+        this.content.append(form);
+    },
 
-    exitInput.keyup(function() {
-      var target = self.data.exits[exitInput.data('oldval')];
-      delete self.data.exits[exitInput.data('oldval')];
-      exitInput.data('oldval', exitInput.val());
-      if (exitInput.val()) self.data.exits[exitInput.val()] = target;
-    });
-    
-    var targetChange = function(evt) {
-    };
+    moveTo: function(x, y) {
+        this.data.edit_x = x;
+        this.data.edit_y = y;
+        this.div.animate({left: x, top: y}, 200);
+    },
 
-    var targetName = $("<span>-</span>");
-    if (this.editor.rooms[target]) targetName.text(this.editor.rooms[target].name);
-    
-    var targetDropper = $('<span class="exitTarget">o</span>');
-    targetDropper.draggable({
-      helper: "clone"
-    });
+    savePos: function() {
+        var offset = this.div.offset();
+        this.data.edit_x = offset.left;
+        this.data.edit_y = offset.top;
+        this.editor.emit({'moveRoom': this.data});
+    },
 
-    targetDropper.data("roomEditor", this);
-    targetDropper.data("exitInput", exitInput);
-    targetDropper.data("targetName", targetName);
+    row: function() {
+        var tr = $('<tr>');
+        Array.prototype.slice.call(arguments, 0).forEach(function(item) {
+            var td = $('<td>');
+            td.append(item);
+            tr.append(td);
+        });
+        return tr;
+    },
+
+    makeInput: function(name, val) {
+        var self = this;
+        var input = $('<input>');
+
+        console.log(name + "=" + val);
+        if (name == "name" && val == "Home") input.attr('readonly', true);
+
+        input.attr('name', name);
+        input.val(val);
+        input.keyup(function() { if (input.val()) self.data[name]=input.val(); });
+        return this.row(name+":", input);
+    },
+
+    makeTextarea: function(name, val) {
+        var self = this;
+        var input = $('<textarea>');
+        input.attr('name', name);
+        input.text(val);
+        input.keyup(function() { self.data[name]=input.val(); });
+        return this.row(name+":", input);
+    },
+
+    makeExit: function(exit, target) {
+        var self = this;
+        var exitInput = $('<input>');
+        exitInput.attr('name', 'exit[]');
+        exitInput.val(exit);
+        exitInput.data('oldval', exit);
+
+        exitInput.keyup(function() {
+            var target = self.data.exits[exitInput.data('oldval')];
+            delete self.data.exits[exitInput.data('oldval')];
+            exitInput.data('oldval', exitInput.val());
+            if (exitInput.val()) self.data.exits[exitInput.val()] = target;
+        });
+
+        var targetChange = function(evt) {
+        };
+
+        var targetName = $("<span>-</span>");
+        if (this.editor.rooms[target]) targetName.text(this.editor.rooms[target].name);
+
+        var targetDropper = $('<span class="exitTarget">o</span>');
+        targetDropper.draggable({
+            helper: "clone"
+        });
+
+        targetDropper.data("roomEditor", this);
+        targetDropper.data("exitInput", exitInput);
+        targetDropper.data("targetName", targetName);
 
 
-    return this.row(exitInput, targetName, targetDropper);
-  },
+        return this.row(exitInput, targetName, targetDropper);
+    },
 
-  exitLines: function() {
-    for (var exit in this.data.exits) {
-      var target = this.data.exits[exit];
-      var targetEditor = this.editor.roomEditors[target];
-      if (targetEditor) {
-        var pos = this.center();
-        var targetPos = targetEditor.center();
+    exitLines: function() {
+        for (var exit in this.data.exits) {
+            var target = this.data.exits[exit];
+            var targetEditor = this.editor.roomEditors[target];
+            if (targetEditor) {
+                var pos = this.center();
+                var targetPos = targetEditor.center();
 
-        this.gfx.lineCap = 'round';
-        this.gfx.beginPath();
-        this.gfx.moveTo(pos.left, pos.top);
-        this.gfx.lineTo(targetPos.left, targetPos.top);
-        this.gfx.strokeStyle = "black";
-        this.gfx.stroke();
-      }
-    }
-  },
+                this.gfx.lineCap = 'round';
+                this.gfx.beginPath();
+                this.gfx.moveTo(pos.left, pos.top);
+                this.gfx.lineTo(targetPos.left, targetPos.top);
+                this.gfx.strokeStyle = "black";
+                this.gfx.stroke();
+            }
+        }
+    },
 
-  center: function() {
-    var pos = this.div.offset();
-    pos.top += this.div.height()/2;
-    pos.left += this.div.width()/2;
-    return pos;
-  },
+    center: function() {
+        var pos = this.div.offset();
+        pos.top += this.div.height()/2;
+        pos.left += this.div.width()/2;
+        return pos;
+    },
 }
 
 var RoomEditor = function(data, editor) {
-  this.data = data;
-  this.editor = editor;
-  this.gfx = $('#lines')[0].getContext("2d");
+    this.data = data;
+    this.editor = editor;
+    this.gfx = $('#lines')[0].getContext("2d");
 }
 
 RoomEditor.prototype = RoomEditorMethods;
 
 var EditorMethods = {
-  onConnect: function(evt) {
-    this.editDiv.empty();
-    console.log("Connected");
-    this.socket.emit('getWorld');
-  },
+    onConnect: function(evt) {
+        this.editDiv.empty();
+        console.log("Connected");
+        this.emit({'getWorld': true});
+    },
 
-  onWorld: function(rooms) {
-    this.rooms = rooms;
-    console.log(rooms);
-    this.roomEditors = {};
-    for (var roomId in rooms) {
-      var roomEditor = new RoomEditor(rooms[roomId], this);
-      this.roomEditors[roomId] = roomEditor;
-      roomEditor.makeRoomBox();
+    onWorld: function(rooms) {
+        console.log("Got world.");
+        this.rooms = rooms;
+        console.log(rooms);
+        this.roomEditors = {};
+        for (var roomId in rooms) {
+            var roomEditor = new RoomEditor(rooms[roomId], this);
+            this.roomEditors[roomId] = roomEditor;
+            roomEditor.makeRoomBox();
+        }
+        this.drawLines();
+    },
+
+    onSaved: function(roomId) {
+        var self = this;
+        var roomEditor = this.roomEditors[roomId];
+        roomEditor.div.find('.roomContent').hide(200, function(){self.drawLines()});
+        roomEditor.refreshContent();
+    },
+
+    onDestroyed: function(roomId) {
+        this.roomEditors[roomId].div.remove();
+        this.drawLines();
+    },
+
+    onUpdated: function(room) {
+        console.log("Got update for " + room.name);
+        var roomEditor = this.roomEditors[room.id];
+        roomEditor.data = room;
+        roomEditor.refreshContent();
+        roomEditor.div.find('.headTitle').text(room.name);
+        this.onMoved(room);
+    },
+
+    onMoved: function(room) {
+        var roomEditor = this.roomEditors[room.id];
+        roomEditor.moveTo(room.edit_x, room.edit_y);
+
+        this.drawLines();
+    },
+
+    onCreated: function(room) {
+        console.log(room)
+        this.rooms[room.id] = room;
+        var roomEditor = new RoomEditor(room, this);
+        this.roomEditors[room.id] = roomEditor;
+        roomEditor.makeRoomBox(this);
+        this.drawLines();
+    },
+
+    createRoom: function(evt) {
+        evt.preventDefault();
+        if (this.newRoomName.val()) this.emit({'createRoom': this.newRoomName.val()});
+        this.newRoomName.val("");
+    },
+
+    resize: function(evt) {
+        console.log("resizing");
+        this.cvs.width($(document).width());
+        this.cvs.height($(document).height());
+        this.cvs.attr("width",    this.cvs.width());
+        this.cvs.attr("height", this.cvs.height());
+        this.drawLines();
+    },
+
+    drawLines: function() {
+        this.cvs[0].width = this.cvs[0].width;
+        //this.gfx.clearRect(0, 0, this.cvs.width(), this.cvs.height());
+        for (var roomId in this.roomEditors) {
+            this.roomEditors[roomId].exitLines();
+        }
+    },
+
+    onMessage: function(evt) {
+        var msg = JSON.parse(evt.data);
+        console.log(msg);
+        if (msg.world) this.onWorld(msg.world);
+        if (msg.roomSaved) this.onSaved(msg.roomSaved);
+        if (msg.roomDestroyed) this.onDestroyed(msg.roomDestroyed);
+        if (msg.roomCreated) this.onCreated(msg.roomCreated);
+        if (msg.roomUpdated) this.onUpdated(msg.roomUpdated);
+        if (msg.roomMoved) this.onMoved(msg.roomMoved);
+        if (msg.refresh) window.location.reload(true);
+    }, 
+
+    emit: function(obj) {
+        this.socket.send(JSON.stringify(obj));
     }
-    this.drawLines();
-  },
-
-  onSaved: function(roomId) {
-    var self = this;
-    var roomEditor = this.roomEditors[roomId];
-    roomEditor.div.find('.roomContent').hide(200, function(){self.drawLines()});
-    roomEditor.refreshContent();
-  },
-
-  onDestroyed: function(roomId) {
-    this.roomEditors[roomId].div.remove();
-    this.drawLines();
-  },
-
-  onUpdated: function(room) {
-    console.log("Got update for " + room.name);
-    var roomEditor = this.roomEditors[room._id];
-    roomEditor.data = room;
-    roomEditor.refreshContent();
-    roomEditor.div.find('.headTitle').text(room.name);
-    this.onMoved(room);
-  },
-
-  onMoved: function(room) {
-    var roomEditor = this.roomEditors[room._id];
-    roomEditor.moveTo(room.editX, room.editY);
-
-    this.drawLines();
-  },
-
-  onCreated: function(room) {
-    this.rooms[room._id] = room;
-    var roomEditor = new RoomEditor(room, this);
-    this.roomEditors[room._id] = roomEditor;
-    roomEditor.makeRoomBox(this);
-    this.drawLines();
-  },
-
-  createRoom: function(evt) {
-    evt.preventDefault();
-    if (this.newRoomName.val()) this.socket.emit('createRoom', this.newRoomName.val());
-    this.newRoomName.val("");
-  },
-
-  resize: function(evt) {
-    console.log("resizing");
-    this.cvs.width($(document).width());
-    this.cvs.height($(document).height());
-    this.cvs.attr("width",  this.cvs.width());
-    this.cvs.attr("height", this.cvs.height());
-    this.drawLines();
-  },
-
-  drawLines: function() {
-    this.cvs[0].width = this.cvs[0].width;
-    //this.gfx.clearRect(0, 0, this.cvs.width(), this.cvs.height());
-    for (var roomId in this.roomEditors) {
-      this.roomEditors[roomId].exitLines();
-    }
-  }
 };
 
 var Editor = function() {
-  var self = this;
-  self.maxZ = 1;
-  
-  this.socket = io.connect(url);
-  this.editDiv = $('#editor');
-  this.newRoomName = $('#newRoomName');
-  
-  $('#newRoomForm').submit(function(evt)           { self.createRoom(evt); });
-  this.socket.on('connect', function(evt)          { self.onConnect(evt); });
-  this.socket.on('world', function(world)          { self.onWorld(world); });
-  this.socket.on('roomSaved', function(roomId)     { self.onSaved(roomId); });
-  this.socket.on('roomDestroyed', function(roomId) { self.onDestroyed(roomId); });
-  this.socket.on('roomCreated', function(room)     { self.onCreated(room); });
-  this.socket.on('roomUpdated', function(room)     { self.onUpdated(room); });
-  this.socket.on('roomMoved', function(room)       { self.onMoved(room); });
-  this.socket.on('refresh', function(evt)          { window.location.reload(true); });
+    var self = this;
+    self.maxZ = 1;
 
-  this.cvs = $('#lines');
-  this.gfx = $('#lines')[0].getContext("2d");
-  
-  $(document).scroll(function(evt) { self.resize(); });
-  $(window).resize(function(evt)   { self.resize(); });
-  this.resize();
+    this.editDiv = $('#editor');
+    this.newRoomName = $('#newRoomName');
 
-  var url;
+    var url = 'ws://'+location.hostname+(location.port ? ':'+location.port: '') + '/ws';
+    this.socket = new WebSocket(url);
+    this.socket.onopen = function(evt) { self.onConnect(evt); };
+    this.socket.onmessage = function(evt) { console.log(evt); self.onMessage(evt); };
+    $('#newRoomForm').submit(function(evt) { self.createRoom(evt); });
+
+    this.cvs = $('#lines');
+    this.gfx = $('#lines')[0].getContext("2d");
+
+    $(document).scroll(function(evt) { self.resize(); });
+    $(window).resize(function(evt)     { self.resize(); });
+    this.resize();
+
+    var url;
 };
 
 Editor.prototype = EditorMethods;

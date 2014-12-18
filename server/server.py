@@ -1,9 +1,12 @@
 import json
 
+import traceback
+
 from client import Client
 
 from editor import Editor
 
+from tornado.gen import coroutine
 from tornado.httpserver import HTTPServer
 from tornado.web import Application, RequestHandler, StaticFileHandler
 from tornado.websocket import WebSocketHandler
@@ -22,13 +25,13 @@ class ClientConnection(WebSocketHandler):
         self.client = Client(self)
         self.editor = Editor(self)
 
+    @coroutine
     def on_message(self, message):
         try:
             data = json.loads(message)
-        except ValueError:
-            print("nope")
-        else:
-            self.client.on_message(data)
+            yield self.client.on_message(data)
+        except Exception:
+            traceback.print_exc()
 
     def send(self, obj):
         self.write_message(json.dumps(obj))

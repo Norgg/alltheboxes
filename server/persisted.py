@@ -20,10 +20,12 @@ class Persisted(object):
             result = yield self.world.db.query(create_query, values)
             self.data = result.as_dict()
             self.id = self.data.get('id')
+            return self
         else:
             fieldstr = ','.join(['{} = %s'.format(field) for field in fields])
             update_query = 'update {} set {} where id = {}'.format(self.__class__.table, fieldstr, self.id)
             yield self.world.db.query(update_query, values)
+            return self
 
     def __getitem__(self, *args, **kwargs):
         return self.data.__getitem__(*args, **kwargs)

@@ -85,11 +85,8 @@ var ClientMethods = {
         console.log(evt);
         var msg = JSON.parse(evt.data);
 
-        if (msg['output']) {
-            this.addOutput({'text': msg['output']});
-        } else if (msg['refresh']) {
-            window.location.reload(true);
-        }
+        if (msg.output) this.addOutput({'text': msg['output']});
+        if (msg.refresh) window.location.reload(true);
     },
 
     keydown: function(evt) {
@@ -155,9 +152,7 @@ var ClientMethods = {
 var Client = function() {
     var self=this;
 
-    var url;
-    if (window.url) url = window.url;
-    else url = 'ws://'+location.hostname+(location.port ? ':'+location.port: '') + '/ws';
+    var url = 'ws://'+location.hostname+(location.port ? ':'+location.port: '') + '/ws';
     this.socket = new WebSocket(url);
 
     this.socket.onopen = function(evt) { self.onConnect(evt); };
