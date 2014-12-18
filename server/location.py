@@ -1,7 +1,8 @@
-class Location(object):
-    def __init__(self, name):
-        self.name = name
-        self.entities = []
+from persisted import Persisted
+
+
+class Location(Persisted):
+    table = "locations"
 
     def __repr__(self):
-        return 'Location: "{}"'.format(self.name)
+        return 'Location: "{}"'.format(self.data['name'])

@@ -1,6 +1,8 @@
-class Entity(object):
-    def __init__(self, name):
-        self.name = name
+from persisted import Persisted
+
+
+class Entity(Persisted):
+    table = "entities"
 
     def __repr__(self):
-        return 'Entity: "{}"'.format(self.name)
+        return 'Entity: "{}"'.format(self.data['name'])

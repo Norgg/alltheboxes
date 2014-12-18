@@ -20,9 +20,9 @@ class World(object):
     @coroutine
     def load(self):
 
-        yield self.db.query("insert into locations (name) values ('start')")
-        yield self.db.query("insert into locations (name) values ('end')")
-        yield self.db.query("insert into entities (name) values ('bob')")
+        yield Location(self, {'name': 'start'}).save()
+        yield Location(self, {'name': 'end'}).save()
+        yield Entity(self, {'name': 'bob'}).save()
 
         try:
             yield self.db.validate()
@@ -32,11 +32,11 @@ class World(object):
 
         locations = yield self.db.query('select * from locations')
         for row in locations:
-            self.locations[row['name']] = Location(row['name'])
+            self.locations[row['id']] = Location(self, row)
 
         entities = yield self.db.query('select * from entities')
         for row in entities:
-            self.entities[row['name']] = Entity(row['name'])
+            self.entities[row['id']] = Entity(self, row)
 
         print(self.locations)
         print(self.entities)

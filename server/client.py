@@ -3,4 +3,5 @@ class Client(object):
         self.connection = connection
 
     def on_message(self, message):
+        self.connection.send({'output': 'yep'})
         print("Client message: {}".format(message))

@@ -30,6 +30,9 @@ class ClientConnection(WebSocketHandler):
         else:
             self.client.on_message(data)
 
+    def send(self, obj):
+        self.write_message(json.dumps(obj))
+
     def on_close(self):
         self.application.server.clients.remove(self)
 
