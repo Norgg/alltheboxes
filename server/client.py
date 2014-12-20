@@ -49,10 +49,9 @@ class Client(Persisted):
             print('cmd: "{}", cmd_arg: "{}"'.format(cmd, cmd_arg))
             yield self.on_cmd(cmd, cmd_arg)
         if 'chat' in message:
-            chat_msg = message['chat']
             if self.location is not None:
-                for client in self.location.clients:
-                    client.send(chat_msg)
+                chat_msg = message['chat']
+                self.broadcast(chat_msg)
         if 'login_token' in message:
             yield self.login_with_token(message['login_token'])
         if 'guest' in message:
@@ -160,12 +159,37 @@ class Client(Persisted):
             new_location = self.world.locations.get(int(location_id))
             new_location.add_client(self)
             yield new_location.save()
-            self.send('joined {}'.format(new_location.data['name']))
+            self.send(output=dict(
+                text=new_location.data['description'],
+                joined=new_location.data['name'],
+                contents=new_location.contents()
+            ))
+            self.broadcast(output=dict(
+                text="{} entered.".format(self.data['username']),
+                contents=new_location.contents()
+            ))
         except Exception:
             print("Problem joining room:")
             traceback.print_exc()
 
-    def send(self, output=None, **kwargs):
-        if output is not None:
-            kwargs.update({'output': output})
+    def send(self, text=None, **kwargs):
+        if text is not None:
+            kwargs['output'] = {
+                'text': text,
+                'contents': self.location.contents() if self.location is not None else None
+            }
         self.connection.send(kwargs)
+
+    def broadcast(self, text=None, **kwargs):
+        if text is not None:
+            kwargs['output'] = {
+                'text': text,
+                'user': self.data['username'],
+                'contents': self.location.contents() if self.location is not None else None
+            }
+
+        if self.location is not None:
+            for client in self.location.clients:
+                client.connection.send(kwargs)
+        else:
+            self.send("Oh no, you're not anywhere.")

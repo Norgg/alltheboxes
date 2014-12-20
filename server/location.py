@@ -6,6 +6,7 @@ class Location(Persisted):
 
     def __init__(self, *args, **kwargs):
         super(Location, self).__init__(*args, **kwargs)
+        self.data['description'] = "No description yet."
         self.clients = []
 
     def __repr__(self):
@@ -18,3 +19,8 @@ class Location(Persisted):
     def remove_client(self, client):
         self.clients.remove(client)
         client.location = None
+
+    def contents(self):
+        contents = [{'name': client.data['username'] for client in self.clients}]
+        print("Contents: {}".format(contents))
+        return contents
