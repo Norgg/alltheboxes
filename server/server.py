@@ -1,6 +1,6 @@
 import json
-
 import traceback
+from datetime import datetime
 
 from client import Client
 
@@ -10,6 +10,14 @@ from tornado.gen import coroutine
 from tornado.httpserver import HTTPServer
 from tornado.web import Application, RequestHandler, StaticFileHandler
 from tornado.websocket import WebSocketHandler
+
+
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+
+    if isinstance(obj, datetime):
+        serial = obj.isoformat()
+        return serial
 
 
 class Index(RequestHandler):
@@ -34,7 +42,7 @@ class ClientConnection(WebSocketHandler):
             traceback.print_exc()
 
     def send(self, obj):
-        self.write_message(json.dumps(obj))
+        self.write_message(json.dumps(obj, default=json_serial))
 
     def on_close(self):
         self.application.server.clients.remove(self)

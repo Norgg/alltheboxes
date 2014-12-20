@@ -12,6 +12,9 @@ from persisted import Persisted
 from randname import randname
 
 from tornado.gen import coroutine
+from tornado.websocket import WebSocketClosedError
+
+# TODO: Split up funcationality from this into player and editor classes.
 
 
 class Client(Persisted):
@@ -40,15 +43,42 @@ class Client(Persisted):
     def on_message(self, message):
         print("Client message: {}".format(message))
 
-        # self.connection.send({'output': 'yep'})
-
         # editor messages:
         if 'getWorld' in message:
             world_data = {id: location.data for id, location in self.world.locations.items()}
             self.send(world=world_data)
+            self.world.editors.append(self)
         if 'createRoom' in message:
             location = yield self.world.make_location(message['createRoom'])
-            self.send(roomCreated=location.data)
+            for client in self.world.editors:
+                try:
+                    client.send(roomCreated=location.data)
+                except WebSocketClosedError:
+                    self.world.editors.remove(client)
+        if 'editRoom' in message:
+            data = message['editRoom']
+            print(data)
+            location = self.world.locations.get(data['id'])
+            if location is not None:
+                location.data = data
+                yield location.save()
+                for client in self.world.editors:
+                    try:
+                        client.send(roomUpdated=location.data)
+                    except WebSocketClosedError:
+                        self.world.editors.remove(client)
+        if 'moveRoom' in message:
+            data = message['moveRoom']
+            location = self.world.locations.get(data['id'])
+            if location is not None:
+                location.data['edit_x'] = data['edit_x']
+                location.data['edit_y'] = data['edit_y']
+                yield location.save()
+                for client in self.world.editors:
+                    try:
+                        client.send(roomMoved=data)
+                    except WebSocketClosedError:
+                        self.world.editors.remove(client)
 
         # client messages:
         if 'cmd' in message:

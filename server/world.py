@@ -11,6 +11,7 @@ class World(object):
     def __init__(self):
         self.entities = {}
         self.locations = {}
+        self.editors = []
         self.db = TornadoSession('postgresql://alltheboxes:alltheboxes@localhost/alltheboxes')
         print("Created world.")
 

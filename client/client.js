@@ -4,11 +4,10 @@ var ClientMethods = {
         var msg = "";
 
         if (data.user) {
-            msg = '~<span class="name">'+escapeHTML(data.user)+"</span>: ";
+            msg = '<span class="name">'+escapeHTML(data.user)+"</span>: ";
         }
-        if (data.joined) {
-            console.log("Joined.");
-            msg = '<span class="roomname">'+escapeHTML(data.joined)+"</span>\n";
+        if (data.header) {
+            msg = '<span class="header">'+escapeHTML(data.header)+"</span>\n";
         }
         if (data.contents) {
             this.setContents(data.contents);
@@ -73,6 +72,8 @@ var ClientMethods = {
         this.output.html(window.localStorage.log.slice(-this.bufSize));
         this.addOutput({text: "Logging in at " + new Date().toUTCString()});
 
+        this.connected = true;
+
         if ($.cookie('token')) {
             this.emit({'login_token': $.cookie('token')});
         } else {
@@ -86,8 +87,16 @@ var ClientMethods = {
 
     onDisconnect: function(evt) {
         self = this;
-        this.addOutput({ text: "Disconnected at " + new Date().toUTCString() + ", attempting to reconnect...\n" });
+        if (this.connected) {
+            this.addOutput({ text: "Disconnected at " + new Date().toUTCString() + ", attempting to reconnect...\n" });
+        }
+        this.connected = false;
+
         setTimeout(function() {
+            console.log("Trying to reconnect.");
+            var url = 'ws://'+location.hostname+(location.port ? ':'+location.port: '') + '/ws';
+            self.socket = new WebSocket(url);
+            
             self.socket.onopen = function(evt) { self.onConnect(evt); };
             self.socket.onclose = function(evt) { self.onDisconnect(evt); }
             self.socket.onmessage = function(evt) { self.onMessage(evt); }
@@ -165,6 +174,8 @@ var ClientMethods = {
 
 var Client = function() {
     var self=this;
+    
+    this.connected = false;
 
     var url = 'ws://'+location.hostname+(location.port ? ':'+location.port: '') + '/ws';
     this.socket = new WebSocket(url);
