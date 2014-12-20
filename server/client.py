@@ -63,6 +63,8 @@ class Client(Persisted):
             yield self.join(cmd_arg)
         elif cmd == 'register':
             yield self.register(cmd_arg)
+        elif cmd == 'login':
+            yield self.login(cmd_arg)
         else:
             print("Command {} not recognised.".format(cmd))
 
@@ -70,7 +72,7 @@ class Client(Persisted):
     def register(self, cmd_arg):
         args = cmd_arg.split()
         if len(args) < 2 or len(args) > 3:
-            self.send("Usage /register username password [email]")
+            self.send("Usage: /register username password [email]")
 
         if len(args) == 2:
             args.append(None)
@@ -84,13 +86,37 @@ class Client(Persisted):
 
         self.data['username'] = username
         salt = uuid4().hex
-        hashed_pass = str(sha512((salt + Client.sekrit + password).encode('utf8')))
-        self.data['password'] = "{}:{}".format(salt, hashed_pass)
+        hashed_password = sha512((salt + Client.sekrit + password).encode('utf8')).hexdigest()
+        self.data['password'] = "{}:{}".format(salt, hashed_password)
         self.data['email'] = email
         self.data['entity_id'] = self.entity.id
         yield self.save()
         self.send("Registered as {}".format(username))
         print(self.world.entities)
+
+    @coroutine
+    def login(self, cmd_arg):
+        args = cmd_arg.split()
+        if(len(args) != 2):
+            self.send("Usage: /login username password")
+
+        username, password = cmd_arg.split()
+
+        result = yield self.world.db.query('select * from players where username = %s', [username])
+
+        if result:
+            data = result.as_dict()
+            salt, hashed_password = data['password'].split(':')
+
+            if sha512((salt + Client.sekrit + password).encode('utf8')).hexdigest() == hashed_password:
+                data['password'] = hashed_password
+                self.data = data
+                self.entity = self.world.entities[data['entity_id']]
+                self.send("Logged in")
+            else:
+                self.send("Wrong username/password")
+        else:
+            self.send("Wrong username/password")
 
     @coroutine
     def join(self, location_id):
