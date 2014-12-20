@@ -17,9 +17,8 @@ drop table if exists exits cascade;
 create table exits (
     location_from int references locations(id) not null,
     location_to int references locations(id) not null,
-    name_from text not null,
-    name_to text,
-    bidirectional boolean not null default false
+    name text not null,
+    primary key (location_from, location_to, name)
 );
 
 drop table if exists scripts cascade;

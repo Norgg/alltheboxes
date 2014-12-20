@@ -1,3 +1,5 @@
+import traceback
+
 from persisted import Persisted
 
 from tornado.gen import coroutine
@@ -9,10 +11,17 @@ class Location(Persisted):
     def __init__(self, *args, **kwargs):
         super(Location, self).__init__(*args, **kwargs)
         self.data['description'] = "No description yet."
+        self.data['exits'] = {}
         self.clients = []
 
     def __repr__(self):
         return 'Location: "{}"'.format(self.data['name'])
+
+    @coroutine
+    def load_exits(self):
+        exit_rows = yield self.world.db.query('select * from exits where location_from = %s', [self.id])
+        for row in exit_rows:
+            self.data['exits'][row['name']] = row['location_to']
 
     @coroutine
     def add_client(self, client):
@@ -30,3 +39,18 @@ class Location(Persisted):
     def contents(self):
         contents = [{'name': client.data['username']} for client in self.clients]
         return contents
+
+    @coroutine
+    def save(self):
+        exits = self.data.pop('exits')
+        super(Location, self).save()
+        for name, to_id in exits.items():
+            try:
+                self.world.db.query(
+                    'insert into exits (location_from, location_to, name) values (%s, %s, %s)',
+                    [self.id, to_id, name]
+                )
+            except:
+                print("Exit already exists?")
+                traceback.print_exc()
+        self.data['exits'] = exits

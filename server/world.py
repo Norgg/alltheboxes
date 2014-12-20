@@ -36,7 +36,11 @@ class World(object):
 
         locations = yield self.db.query('select * from locations')
         for row in locations:
-            self.locations[row['id']] = Location(self, row)
+            location = Location(self, row)
+            self.locations[location.id] = location
+
+        for id, location in self.locations.items():
+            yield location.load_exits()
 
         entities = yield self.db.query('select * from entities')
         for row in entities:
