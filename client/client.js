@@ -7,6 +7,7 @@ var ClientMethods = {
             msg = '~<span class="name">'+escapeHTML(data.user)+"</span>: ";
         }
         if (data.joined) {
+            console.log("Joined.");
             msg = '<span class="roomname">'+escapeHTML(data.joined)+"</span>\n";
         }
         if (data.contents) {
@@ -14,6 +15,7 @@ var ClientMethods = {
         }
 
         if (data.text) {
+            console.log(data.text);
             msg += escapeHTML(data.text)+"\n";
             this.output.append(msg);
 
@@ -55,6 +57,7 @@ var ClientMethods = {
     },
 
     setContents: function(data) {
+        console.log("Setting contents");
         var self = this;
         this.contents.empty();
         $.each(data, function(idx, elem) {
@@ -95,7 +98,7 @@ var ClientMethods = {
         console.log(evt);
         var msg = JSON.parse(evt.data);
 
-        if (msg.output) this.addOutput({'text': msg.output});
+        if (msg.output) this.addOutput(msg.output);
         if (msg.refresh) window.location.reload(true);
         if (msg.token) this.setToken(msg.token)
     },
