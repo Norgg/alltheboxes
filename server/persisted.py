@@ -4,10 +4,14 @@ from tornado.gen import coroutine
 class Persisted(object):
     table = ""
 
-    def __init__(self, world, data):
+    def __init__(self, world, data=None):
+        if data is None:
+            self.data = {}
+        else:
+            self.data = data
+
         self.world = world
-        self.data = data
-        self.id = data.get('id')
+        self.id = self.data.get('id')
 
     @coroutine
     def save(self):

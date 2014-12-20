@@ -78,7 +78,13 @@ var ClientMethods = {
     },
 
     onDisconnect: function(evt) {
+        self = this;
         this.addOutput({ text: "Disconnected at " + new Date().toUTCString() + ", attempting to reconnect...\n" });
+        setTimeout(function() {
+            self.socket.onopen = function(evt) { self.onConnect(evt); };
+            self.socket.onclose = function(evt) { self.onDisconnect(evt); }
+            self.socket.onmessage = function(evt) { self.onMessage(evt); }
+        }, 1000);
     },
 
     onMessage: function(evt) {

@@ -47,5 +47,6 @@ create table players (
     id serial primary key,
     entity_id int references entities(id),
     username text not null,
-    password text not null
+    password text not null,
+    email text
 );
