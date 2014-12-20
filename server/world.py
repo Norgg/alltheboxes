@@ -31,7 +31,6 @@ class World(object):
             yield self.db.validate()
         except OperationalError as error:
             print('Error connecting to the database: %s', error)
-            raise Exception("What. :(")
 
         locations = yield self.db.query('select * from locations')
         for row in locations:

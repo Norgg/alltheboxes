@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from server import Server
 
 from tornado.gen import coroutine

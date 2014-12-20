@@ -27,6 +27,7 @@ class ClientConnection(WebSocketHandler):
 
     @coroutine
     def on_message(self, message):
+        print(self.stream.__class__)
         try:
             data = json.loads(message)
             yield self.client.on_message(data)
