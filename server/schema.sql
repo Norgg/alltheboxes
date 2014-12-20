@@ -36,7 +36,7 @@ create table entities (
     id serial primary key,
     name text not null,
     description text,
-    room int references locations(id),
+    location_id int references locations(id),
     container int references entities(id),
     attributes hstore,
     aspects text[],

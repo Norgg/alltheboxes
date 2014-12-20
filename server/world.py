@@ -12,6 +12,7 @@ class World(object):
         self.entities = {}
         self.locations = {}
         self.db = TornadoSession('postgresql://alltheboxes:alltheboxes@localhost/alltheboxes')
+        print("Created world.")
 
     @coroutine
     def wipe(self):

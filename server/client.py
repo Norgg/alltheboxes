@@ -158,7 +158,7 @@ class Client(Persisted):
 
         try:
             new_location = self.world.locations.get(int(location_id))
-            new_location.add_client(self)
+            yield new_location.add_client(self)
             yield new_location.save()
             self.send(output=dict(
                 text=new_location.data['description'],

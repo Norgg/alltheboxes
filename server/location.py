@@ -1,5 +1,7 @@
 from persisted import Persisted
 
+from tornado.gen import coroutine
+
 
 class Location(Persisted):
     table = "locations"
@@ -12,17 +14,20 @@ class Location(Persisted):
     def __repr__(self):
         return 'Location: "{}"'.format(self.data['name'])
 
+    @coroutine
     def add_client(self, client):
         self.clients.append(client)
         client.entity.data['location_id'] = self.id
-        client.entity.save()
+        yield client.entity.save()
         client.location = self
+        print("Added client {} to {}".format(client, self))
 
     def remove_client(self, client):
         self.clients.remove(client)
         client.location = None
+        print("Removed client {} from {}".format(client, self))
 
     def contents(self):
-        contents = [{'name': client.data['username'] for client in self.clients}]
+        contents = [{'name': client.data['username']} for client in self.clients]
         print("Contents: {}".format(contents))
         return contents
