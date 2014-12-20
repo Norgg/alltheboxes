@@ -1,6 +1,7 @@
 import traceback
 
 from hashlib import sha512
+from inspect import cleandoc
 from random import random
 from uuid import uuid4
 
@@ -27,6 +28,13 @@ class Client(Persisted):
             self.data['username'] = randname(5 + int(random() * 3))
 
         self.entity = None
+
+        self.commands = {
+            'help': self.help,
+            'join': self.join,
+            'register': self.register,
+            'login': self.login
+        }
 
     @coroutine
     def on_message(self, message):
@@ -59,25 +67,39 @@ class Client(Persisted):
 
     @coroutine
     def on_cmd(self, cmd, cmd_arg):
-        print("on_cmd called.")
-        if cmd == 'join':
-            yield self.join(cmd_arg)
-        elif cmd == 'register':
-            yield self.register(cmd_arg)
-        elif cmd == 'login':
-            yield self.login(cmd_arg)
+        command = self.commands[cmd]
+        if command is not None:
+            yield command(cmd_arg)
         else:
             print("Command {} not recognised.".format(cmd))
 
     @coroutine
+    def help(self, cmd_arg):
+        """Display this help text."""
+        if cmd_arg is "":
+            for command, func in self.commands.items():
+                self.send(output=dict(text=cleandoc(func.__doc__), header=command))
+        else:
+            command = cmd_arg.strip()
+            if command in self.commands:
+                self.send(output=dict(text=cleandoc(self.commands[command].__doc__), header=command))
+            else:
+                self.send("Command {} not found.".format(command))
+
+    @coroutine
     def register(self, cmd_arg):
+        """
+        username, password
+        Create a new account with the provided username and password.  Your progress as a guest will be saved.
+        """
         args = cmd_arg.split()
-        if len(args) < 2 or len(args) > 3:
-            self.send("Usage: /register username password [email]")
+        if len(args) != 2:
+            self.send("Usage: /register username password")
 
         if len(args) == 2:
             args.append(None)
 
+        # Email currently unused.
         username, password, email = args
 
         print("Registering {}".format(username))
@@ -98,6 +120,10 @@ class Client(Persisted):
 
     @coroutine
     def login(self, cmd_arg):
+        """
+        username, password
+        Log in to an existing account.  If you are using a guest account you will lose access to it.
+        """
         args = cmd_arg.split()
         if(len(args) != 2):
             self.send("Usage: /login username password")
@@ -150,6 +176,7 @@ class Client(Persisted):
 
     @coroutine
     def join(self, location_id):
+        """Admin only. Teleport to a location."""
         print("joining {}".format(location_id))
         old_location = self.location
         if old_location is not None:
@@ -160,14 +187,15 @@ class Client(Persisted):
             new_location = self.world.locations.get(int(location_id))
             yield new_location.add_client(self)
             yield new_location.save()
+            contents = new_location.contents()
             self.send(output=dict(
                 text=new_location.data['description'],
-                joined=new_location.data['name'],
-                contents=new_location.contents()
+                header=new_location.data['name'],
+                contents=contents
             ))
             self.broadcast(output=dict(
                 text="{} entered.".format(self.data['username']),
-                contents=new_location.contents()
+                contents=contents
             ))
         except Exception:
             print("Problem joining room:")

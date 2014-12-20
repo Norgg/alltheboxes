@@ -29,5 +29,4 @@ class Location(Persisted):
 
     def contents(self):
         contents = [{'name': client.data['username']} for client in self.clients]
-        print("Contents: {}".format(contents))
         return contents
