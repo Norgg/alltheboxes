@@ -49,9 +49,9 @@ var ClientMethods = {
         }
     },
 
-    setID: function(data) {
+    setToken: function(data) {
         //console.log("Storing room: " + data);
-        $.cookie('id', data);
+        $.cookie('token', data);
     },
 
     setContents: function(data) {
@@ -70,7 +70,11 @@ var ClientMethods = {
         this.output.html(window.localStorage.log.slice(-this.bufSize));
         this.addOutput({text: "Logging in at " + new Date().toUTCString()});
 
-        this.emit({'login': $.cookie('id')});
+        if ($.cookie('token')) {
+            this.emit({'login_token': $.cookie('token')});
+        } else {
+            this.emit({'guest': true});
+        }
     },
 
     emit: function(obj) {
@@ -91,8 +95,9 @@ var ClientMethods = {
         console.log(evt);
         var msg = JSON.parse(evt.data);
 
-        if (msg.output) this.addOutput({'text': msg['output']});
+        if (msg.output) this.addOutput({'text': msg.output});
         if (msg.refresh) window.location.reload(true);
+        if (msg.token) this.setToken(msg.token)
     },
 
     keydown: function(evt) {

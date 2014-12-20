@@ -6,8 +6,10 @@ drop table if exists locations cascade;
 create table locations (
     id serial primary key,
     name text,
+    description text,
     edit_x int default 100,
-    edit_y int default 100
+    edit_y int default 100,
+    created timestamp default current_timestamp
 );
 
 drop table if exists exits cascade;
@@ -37,7 +39,8 @@ create table entities (
     room int references locations(id),
     container int references entities(id),
     attributes hstore,
-    aspects text[]
+    aspects text[],
+    created timestamp default current_timestamp
 );
 
 
@@ -46,7 +49,17 @@ drop table if exists players cascade;
 create table players (
     id serial primary key,
     entity_id int references entities(id),
-    username text not null,
+    username text unique not null,
     password text not null,
-    email text
+    email text,
+    created timestamp default current_timestamp
+);
+
+drop table if exists tokens cascade;
+
+create table tokens (
+    id serial primary key,
+    token text,
+    player_id int references players(id),
+    created timestamp default current_timestamp
 );

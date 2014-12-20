@@ -23,17 +23,15 @@ class Client(Persisted):
 
         super(Client, self).__init__(connection.application.server.world)
 
-        entity_id = self.data.get('entity_id')
-        if entity_id is not None:
-            self.entity = self.world.entities[entity_id]
-
         if self.data.get('username') is None:
             self.data['username'] = randname(5 + int(random() * 3))
-            self.send("Hi {}".format(self.data['username']))
+
+        self.entity = None
 
     @coroutine
     def on_message(self, message):
         print("Client message: {}".format(message))
+
         # self.connection.send({'output': 'yep'})
 
         # editor messages:
@@ -55,6 +53,10 @@ class Client(Persisted):
             if self.location is not None:
                 for client in self.location.clients:
                     client.send(chat_msg)
+        if 'login_token' in message:
+            yield self.login_with_token(message['login_token'])
+        if 'guest' in message:
+            yield self.login_as_guest()
 
     @coroutine
     def on_cmd(self, cmd, cmd_arg):
@@ -81,9 +83,6 @@ class Client(Persisted):
 
         print("Registering {}".format(username))
 
-        self.entity = yield Entity(self.world, data={'name': username}).save()
-        self.world.entities[self.entity.id] = self.entity
-
         self.data['username'] = username
         salt = uuid4().hex
         hashed_password = sha512((salt + Client.sekrit + password).encode('utf8')).hexdigest()
@@ -91,6 +90,9 @@ class Client(Persisted):
         self.data['email'] = email
         self.data['entity_id'] = self.entity.id
         yield self.save()
+
+        self.entity.data['name'] = self.data['username']
+
         self.send("Registered as {}".format(username))
         print(self.world.entities)
 
@@ -109,14 +111,42 @@ class Client(Persisted):
             salt, hashed_password = data['password'].split(':')
 
             if sha512((salt + Client.sekrit + password).encode('utf8')).hexdigest() == hashed_password:
-                data['password'] = hashed_password
-                self.data = data
-                self.entity = self.world.entities[data['entity_id']]
-                self.send("Logged in")
+                self.login_success(data)
+                token = yield self.create_token()
+                self.send(token=token)
             else:
                 self.send("Wrong username/password")
         else:
             self.send("Wrong username/password")
+
+    @coroutine
+    def login_with_token(self, token):
+        result = yield self.world.db.query('select * from tokens where token = %s', [token])
+        if result:
+            user_id = result.as_dict()['player_id']
+            data = yield self.world.db.query('select * from players where id = %s', [user_id])
+            self.login_success(data.as_dict())
+        else:
+            self.send("Login token invalid or expired.")
+            yield self.login_as_guest()
+
+    @coroutine
+    def login_as_guest(self):
+        self.entity = yield Entity(self.world, data={'name': self.data['username']}).save()
+        self.world.entities[self.entity.id] = self.entity
+        self.send("Logged in as a guest. Hi {}.".format(self.data['username']))
+
+    def login_success(self, data):
+        self.data = data
+        self.id = data['id']
+        self.entity = self.world.entities[data['entity_id']]
+        self.send("Logged in as {}".format(self.data['username']))
+
+    @coroutine
+    def create_token(self):
+        token = uuid4().hex
+        yield self.world.db.query('insert into tokens (token, player_id) values (%s, %s);', [token, self.id])
+        return token
 
     @coroutine
     def join(self, location_id):
