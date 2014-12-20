@@ -14,6 +14,8 @@ class Location(Persisted):
 
     def add_client(self, client):
         self.clients.append(client)
+        client.entity.data['location_id'] = self.id
+        client.entity.save()
         client.location = self
 
     def remove_client(self, client):

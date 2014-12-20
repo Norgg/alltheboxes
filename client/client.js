@@ -180,7 +180,6 @@ var Client = function() {
     this.input = $('#input');
     this.output = $('#output');
     this.contents = $('#contents');
-    this.contents.hide();
     this.resize();
     this.input.keyup(function(evt) {self.keyup(evt);});
     this.input.keydown(function(evt) {self.keydown(evt);});

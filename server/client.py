@@ -92,7 +92,8 @@ class Client(Persisted):
 
         self.entity.data['name'] = self.data['username']
 
-        self.send("Registered as {}".format(username))
+        token = yield self.create_token()
+        self.send("Registered as {}".format(username), token=token)
         print(self.world.entities)
 
     @coroutine
