@@ -1,3 +1,5 @@
+import traceback
+
 from entity import Entity
 
 from location import Location
@@ -28,7 +30,10 @@ class World(object):
     def wipe(self):
         result = yield self.db.query(open('schema.sql').read())
         result.free()
-        yield Location(self, {'name': 'start'}).save()
+        start = yield Location(self, {'name': 'start'}).save()
+        self.start_location = start
+        self.locations[start.id] = start
+        yield Entity(self, {'name': 'Twiglet', 'aspects': ['npc']}).save()
         print("World wiped")
 
     @coroutine
@@ -76,5 +81,10 @@ class World(object):
 
     @coroutine
     def update(self):
+        print("Updating world.")
         for id, entity in list(self.entities.items()):
-            yield entity.update()
+            print("Updating {}".format(entity))
+            try:
+                yield entity.update()
+            except Exception:
+                traceback.print_exc()

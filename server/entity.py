@@ -1,4 +1,8 @@
+from random import random
+
 from persisted import Persisted
+
+from randname import randname
 
 from tornado.gen import coroutine
 
@@ -41,9 +45,17 @@ class Entity(Persisted):
 
     @coroutine
     def update(self):
-        if self.data['attributes'].get('guest') and (self.client is None or self.client.connection.stream.closed()):
-            print("Clearing up disconnected guest.")
-            yield self.destroy()
+        if self.data.get('attributes') is not None:
+            if self.data['attributes'].get('guest') and (self.client is None or self.client.connection.stream.closed()):
+                print("Clearing up disconnected guest.")
+                yield self.destroy()
+
+        if self.data.get('aspects') is not None:
+            if 'npc' in self.data['aspects']:
+                if (random() < 0.1):
+                    sentence = " ".join([randname(int(4 + 4 * random())) for i in range(int(4 + 5 * random()))])
+                    sentence = sentence.capitalize() + "."
+                    self.location.send_chat(self.data['name'], sentence)
 
     def __repr__(self):
         return 'Entity: "{}"'.format(self.data['name'])
