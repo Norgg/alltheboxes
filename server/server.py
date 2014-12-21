@@ -44,7 +44,12 @@ class ClientConnection(WebSocketHandler):
     def send(self, obj):
         self.write_message(json.dumps(obj, default=json_serial))
 
+    @coroutine
     def on_close(self):
+        try:
+            yield self.client.on_close()
+        except Exception:
+            traceback.print_exc()
         self.application.server.clients.remove(self)
 
 

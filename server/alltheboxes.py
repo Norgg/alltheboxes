@@ -11,9 +11,9 @@ from world import World
 def main():
     world = World()
 
-    yield world.wipe()
-
+    #yield world.wipe()
     yield world.load()
+
     server = Server(world, 9876)
     server.listen()
 

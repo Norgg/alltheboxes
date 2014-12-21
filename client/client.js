@@ -87,6 +87,7 @@ var ClientMethods = {
 
     onDisconnect: function(evt) {
         self = this;
+        this.setContents([]);
         if (this.connected) {
             this.addOutput({ text: "Disconnected at " + new Date().toUTCString() + ", attempting to reconnect...\n" });
         }

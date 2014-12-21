@@ -1,5 +1,3 @@
-import traceback
-
 from hashlib import sha512
 from inspect import cleandoc
 from random import random
@@ -34,7 +32,7 @@ class Client(Persisted):
 
         self.commands = {
             'help': self.help,
-            'join': self.join,
+            'go': self.go,
             'register': self.register,
             'login': self.login
         }
@@ -119,7 +117,7 @@ class Client(Persisted):
     @coroutine
     def register(self, cmd_arg):
         """
-        username, password
+        /register username, password
         Create a new account with the provided username and password.  Your progress as a guest will be saved.
         """
         args = cmd_arg.split()
@@ -151,7 +149,7 @@ class Client(Persisted):
     @coroutine
     def login(self, cmd_arg):
         """
-        username, password
+        /login username password
         Log in to an existing account.  If you are using a guest account you will lose access to it.
         """
         args = cmd_arg.split()
@@ -167,7 +165,7 @@ class Client(Persisted):
             salt, hashed_password = data['password'].split(':')
 
             if sha512((salt + Client.sekrit + password).encode('utf8')).hexdigest() == hashed_password:
-                self.login_success(data)
+                yield self.login_success(data)
                 token = yield self.create_token()
                 self.send(token=token)
             else:
@@ -181,22 +179,30 @@ class Client(Persisted):
         if result:
             user_id = result.as_dict()['player_id']
             data = yield self.world.db.query('select * from players where id = %s', [user_id])
-            self.login_success(data.as_dict())
+            yield self.login_success(data.as_dict())
         else:
             self.send("Login token invalid or expired.")
             yield self.login_as_guest()
 
     @coroutine
     def login_as_guest(self):
+        print("New guest connection.")
         self.entity = yield Entity(self.world, data={'name': self.data['username']}).save()
         self.world.entities[self.entity.id] = self.entity
+        yield self.world.locations[self.entity.data['location_id']].add_client(self)
         self.send("Logged in as a guest. Hi {}.".format(self.data['username']))
+        self.send_location_description()
+        self.broadcast(output={'text': "{} has formed.".format(self.data['username']),
+                               'contents': self.location.contents()})
 
+    @coroutine
     def login_success(self, data):
         self.data = data
         self.id = data['id']
         self.entity = self.world.entities[data['entity_id']]
+        yield self.world.locations[self.entity.data['location_id']].add_client(self)
         self.send("Logged in as {}".format(self.data['username']))
+        self.send_location_description()
 
     @coroutine
     def create_token(self):
@@ -205,31 +211,29 @@ class Client(Persisted):
         return token
 
     @coroutine
-    def join(self, location_id):
-        """Admin only. Teleport to a location."""
-        print("joining {}".format(location_id))
+    def go(self, exit):
+        """
+        /go direction
+        Go through an exit in a direction
+        """
+        print("Going {}".format(exit))
         old_location = self.location
-        if old_location is not None:
+
+        new_location_id = old_location.data['exits'].get(exit)
+        if new_location_id is None:
+            self.send("Couldn't find exit {}".format(exit))
+        else:
             old_location.remove_client(self)
             yield old_location.save()
-
-        try:
-            new_location = self.world.locations.get(int(location_id))
+            new_location = self.world.locations.get(new_location_id)
             yield new_location.add_client(self)
             yield new_location.save()
             contents = new_location.contents()
-            self.send(output=dict(
-                text=new_location.data['description'],
-                header=new_location.data['name'],
-                contents=contents
-            ))
+            self.send_location_description()
             self.broadcast(output=dict(
                 text="{} entered.".format(self.data['username']),
                 contents=contents
             ))
-        except Exception:
-            print("Problem joining room:")
-            traceback.print_exc()
 
     def send(self, text=None, **kwargs):
         if text is not None:
@@ -239,16 +243,35 @@ class Client(Persisted):
             }
         self.connection.send(kwargs)
 
-    def broadcast(self, text=None, **kwargs):
-        if text is not None:
-            kwargs['output'] = {
-                'text': text,
-                'user': self.data['username'],
-                'contents': self.location.contents() if self.location is not None else None
-            }
+    def broadcast(self, text=None, location=None, **kwargs):
+        if location is None:
+            location = self.location
 
-        if self.location is not None:
-            for client in self.location.clients:
+        if location is not None:
+            if text is not None:
+                kwargs['output'] = {
+                    'text': text,
+                    'user': self.data['username'],
+                    'contents': location.contents()
+                }
+            for client in location.clients:
                 client.connection.send(kwargs)
         else:
             self.send("Oh no, you're not anywhere.")
+
+    def send_location_description(self):
+        self.send(output=dict(
+            text=self.location.describe(),
+            header=self.location.data['name'],
+            contents=self.location.contents()
+        ))
+
+    @coroutine
+    def on_close(self):
+        if self.location is not None:
+            old_location = self.location
+            old_location.remove_client(self)
+            yield old_location.save()
+            self.broadcast(output={'text': "{} was vapourized.".format(self.data['username']),
+                                   'contents': old_location.contents()},
+                           location=old_location)

@@ -12,32 +12,35 @@ class World(object):
         self.entities = {}
         self.locations = {}
         self.editors = []
-        self.db = TornadoSession('postgresql://alltheboxes:alltheboxes@localhost/alltheboxes')
+        self.db = TornadoSession('postgresql://alltheboxes:alltheboxes@localhost/alltheboxes', pool_max_size=6000)
         print("Created world.")
 
     @coroutine
     def wipe(self):
         yield self.db.query(open('schema.sql').read())
-
-    @coroutine
-    def gen_test_data(self):
         yield Location(self, {'name': 'start'}).save()
-        yield Location(self, {'name': 'end'}).save()
-        yield Entity(self, {'name': 'bob'}).save()
+        print("World wiped")
 
     @coroutine
     def load(self):
-        yield self.gen_test_data()
-
         try:
             yield self.db.validate()
         except OperationalError as error:
             print('Error connecting to the database: %s', error)
 
-        locations = yield self.db.query('select * from locations')
+        locations = yield self.db.query('select * from locations order by created;')
+        print(locations)
+
+        first = True
         for row in locations:
+            print(row)
             location = Location(self, row)
             self.locations[location.id] = location
+
+            if first:
+                print("Start location set.")
+                first = False
+                self.start_location = location
 
         for id, location in self.locations.items():
             yield location.load_exits()

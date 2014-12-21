@@ -43,14 +43,19 @@ class Location(Persisted):
     @coroutine
     def save(self):
         exits = self.data.pop('exits')
-        super(Location, self).save()
+        yield super(Location, self).save()
         for name, to_id in exits.items():
             try:
-                self.world.db.query(
-                    'insert into exits (location_from, location_to, name) values (%s, %s, %s)',
-                    [self.id, to_id, name]
+                yield self.world.db.query(
+                    'insert into exits (location_from, location_to, name) select %s, %s, %s where not exists (select 1 from exits where location_from = %s and location_to = %s);',  # noqa
+                    [self.id, to_id, name, self.id, to_id]
                 )
             except:
                 print("Exit already exists?")
                 traceback.print_exc()
         self.data['exits'] = exits
+        return self
+
+    def describe(self):
+        exit_desc = "Exits: {}".format(", ".join(name for name, location_id in self.data['exits'].items()))
+        return "{}\n{}".format(self.data['description'], exit_desc)

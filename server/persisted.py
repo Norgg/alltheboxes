@@ -24,7 +24,7 @@ class Persisted(object):
             result = yield self.world.db.query(create_query, values)
             self.data = result.as_dict()
             self.id = self.data.get('id')
-            print("Created entity with id: {}".format(self.id))
+            print("Created {} with id: {}".format(self.__class__.__name__, self.id))
             return self
         else:
             fieldstr = ','.join(['{} = %s'.format(field) for field in fields])
