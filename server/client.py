@@ -91,7 +91,7 @@ class Client(Persisted):
             if self.entity.location is not None:
                 chat_msg = message['chat']
                 if self.entity.location:
-                    self.entity.location.send_chat(chat_msg)
+                    self.entity.location.send_chat(self.data['username'], chat_msg)
                 else:
                     self.send("You seem to be nowhere.")
         if 'login_token' in message:
