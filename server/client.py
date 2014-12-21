@@ -147,7 +147,9 @@ class Client(Persisted):
         yield self.save()
 
         self.entity.data['name'] = self.data['username']
-        del self.entity.data['attributes']['guest']
+        if self.entity.data.get('attributes') and self.entity.data['attributes'].get('guest'):
+            del self.entity.data['attributes']['guest']
+        yield self.entity.save()
 
         token = yield self.create_token()
         self.send("Registered as {}".format(username), token=token)
@@ -268,6 +270,9 @@ class Client(Persisted):
     @coroutine
     def on_close(self):
         if self.entity.location is not None:
-            old_location = self.entity.location
-            yield self.entity.destroy()
-            old_location.send_event("{} was vapourized.".format(self.data['username']))
+            if self.id is None:
+                old_location = self.entity.location
+                yield self.entity.destroy()
+                old_location.send_event("{} was vapourized.".format(self.data['username']))
+            else:
+                self.entity.location.send_event("{} went to sleep.".format(self.data['username']))
