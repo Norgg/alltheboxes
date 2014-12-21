@@ -17,7 +17,8 @@ class World(object):
 
     @coroutine
     def wipe(self):
-        yield self.db.query(open('schema.sql').read())
+        result = yield self.db.query(open('schema.sql').read())
+        result.free()
         yield Location(self, {'name': 'start'}).save()
         print("World wiped")
 
@@ -28,26 +29,32 @@ class World(object):
         except OperationalError as error:
             print('Error connecting to the database: %s', error)
 
-        locations = yield self.db.query('select * from locations order by created;')
-        print(locations)
+        try:
+            locations = yield self.db.query('select * from locations order by created;')
+            print(locations)
 
-        first = True
-        for row in locations:
-            print(row)
-            location = Location(self, row)
-            self.locations[location.id] = location
+            first = True
+            for row in locations:
+                print(row)
+                location = Location(self, row)
+                self.locations[location.id] = location
 
-            if first:
-                print("Start location set.")
-                first = False
-                self.start_location = location
+                if first:
+                    print("Start location set.")
+                    first = False
+                    self.start_location = location
+        finally:
+            locations.free()
 
         for id, location in self.locations.items():
             yield location.load_exits()
 
-        entities = yield self.db.query('select * from entities')
-        for row in entities:
-            self.entities[row['id']] = Entity(self, row)
+        try:
+            entities = yield self.db.query('select * from entities')
+            for row in entities:
+                self.entities[row['id']] = Entity(self, row)
+        finally:
+            entities.free()
 
         print(self.locations)
         print(self.entities)

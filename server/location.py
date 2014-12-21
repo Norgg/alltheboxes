@@ -12,7 +12,7 @@ class Location(Persisted):
         super(Location, self).__init__(*args, **kwargs)
         self.data['description'] = "No description yet."
         self.data['exits'] = {}
-        self.clients = []
+        self.entities = []
 
     def __repr__(self):
         return 'Location: "{}"'.format(self.data['name'])
@@ -22,22 +22,25 @@ class Location(Persisted):
         exit_rows = yield self.world.db.query('select * from exits where location_from = %s', [self.id])
         for row in exit_rows:
             self.data['exits'][row['name']] = row['location_to']
+        exit_rows.free()
 
     @coroutine
-    def add_client(self, client):
-        self.clients.append(client)
-        client.entity.data['location_id'] = self.id
-        yield client.entity.save()
-        client.location = self
-        print("Added client {} to {}".format(client, self))
+    def add_entity(self, entity, save=True):
+        if entity not in self.entities:
+            self.entities.append(entity)
+            entity.data['location_id'] = self.id
+            if save:
+                yield entity.save()
+        entity.location = self
+        print("Added entity {} to {}".format(entity, self))
 
-    def remove_client(self, client):
-        self.clients.remove(client)
-        client.location = None
-        print("Removed client {} from {}".format(client, self))
+    def remove_entity(self, entity):
+        self.entities.remove(entity)
+        entity.location = None
+        print("Removed client {} from {}".format(entity, self))
 
     def contents(self):
-        contents = [{'name': client.data['username']} for client in self.clients]
+        contents = [entity.contents_data() for entity in self.entities]
         return contents
 
     @coroutine
@@ -46,10 +49,11 @@ class Location(Persisted):
         yield super(Location, self).save()
         for name, to_id in exits.items():
             try:
-                yield self.world.db.query(
+                results = yield self.world.db.query(
                     'insert into exits (location_from, location_to, name) select %s, %s, %s where not exists (select 1 from exits where location_from = %s and location_to = %s);',  # noqa
                     [self.id, to_id, name, self.id, to_id]
                 )
+                results.free()
             except:
                 print("Exit already exists?")
                 traceback.print_exc()

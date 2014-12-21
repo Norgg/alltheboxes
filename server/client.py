@@ -21,12 +21,15 @@ class Client(Persisted):
 
     def __init__(self, connection):
         self.connection = connection
-        self.location = None
 
         super(Client, self).__init__(connection.application.server.world)
 
         if self.data.get('username') is None:
             self.data['username'] = randname(5 + int(random() * 3))
+            self.id = None
+            self.guest = True
+        else:
+            self.guest = False
 
         self.entity = None
 
@@ -85,7 +88,7 @@ class Client(Persisted):
             print('cmd: "{}", cmd_arg: "{}"'.format(cmd, cmd_arg))
             yield self.on_cmd(cmd, cmd_arg)
         if 'chat' in message:
-            if self.location is not None:
+            if self.entity.location is not None:
                 chat_msg = message['chat']
                 self.broadcast(chat_msg)
         if 'login_token' in message:
@@ -173,41 +176,55 @@ class Client(Persisted):
         else:
             self.send("Wrong username/password")
 
+        result.free()
+
     @coroutine
     def login_with_token(self, token):
-        result = yield self.world.db.query('select * from tokens where token = %s', [token])
-        if result:
-            user_id = result.as_dict()['player_id']
-            data = yield self.world.db.query('select * from players where id = %s', [user_id])
-            yield self.login_success(data.as_dict())
-        else:
-            self.send("Login token invalid or expired.")
-            yield self.login_as_guest()
+        try:
+            result = yield self.world.db.query('select * from tokens where token = %s', [token])
+            if result:
+                user_id = result.as_dict()['player_id']
+                try:
+                    data = yield self.world.db.query('select * from players where id = %s', [user_id])
+                    yield self.login_success(data.as_dict())
+                finally:
+                    data.free()
+            else:
+                self.send("Login token invalid or expired.")
+                yield self.login_as_guest()
+        finally:
+            result.free()
 
     @coroutine
     def login_as_guest(self):
         print("New guest connection.")
         self.entity = yield Entity(self.world, data={'name': self.data['username']}).save()
+        self.entity.client = self
         self.world.entities[self.entity.id] = self.entity
-        yield self.world.locations[self.entity.data['location_id']].add_client(self)
+        yield self.world.locations[self.entity.data['location_id']].add_entity(self.entity)
         self.send("Logged in as a guest. Hi {}.".format(self.data['username']))
         self.send_location_description()
         self.broadcast(output={'text': "{} has formed.".format(self.data['username']),
-                               'contents': self.location.contents()})
+                               'contents': self.entity.location.contents()})
 
     @coroutine
     def login_success(self, data):
         self.data = data
         self.id = data['id']
         self.entity = self.world.entities[data['entity_id']]
-        yield self.world.locations[self.entity.data['location_id']].add_client(self)
+        self.entity.client = self
+        print("{} logged in successfully.".format(self.data['username']))
+        yield self.world.locations[self.entity.data['location_id']].add_entity(self.entity)
         self.send("Logged in as {}".format(self.data['username']))
         self.send_location_description()
+        self.broadcast(output={'text': "{} woke up.".format(self.data['username']),
+                               'contents': self.entity.location.contents()})
 
     @coroutine
     def create_token(self):
         token = uuid4().hex
-        yield self.world.db.query('insert into tokens (token, player_id) values (%s, %s);', [token, self.id])
+        result = yield self.world.db.query('insert into tokens (token, player_id) values (%s, %s);', [token, self.id])
+        result.free()
         return token
 
     @coroutine
@@ -216,8 +233,7 @@ class Client(Persisted):
         /go direction
         Go through an exit in a direction
         """
-        print("Going {}".format(exit))
-        old_location = self.location
+        old_location = self.entity.location
 
         new_location_id = old_location.data['exits'].get(exit)
         if new_location_id is None:
@@ -226,7 +242,8 @@ class Client(Persisted):
             old_location.remove_client(self)
             yield old_location.save()
             new_location = self.world.locations.get(new_location_id)
-            yield new_location.add_client(self)
+            print("{} going {} to {}".format(self.data['username'], exit, new_location.data['name']))
+            yield new_location.add_entity(self.entity)
             yield new_location.save()
             contents = new_location.contents()
             self.send_location_description()
@@ -237,15 +254,14 @@ class Client(Persisted):
 
     def send(self, text=None, **kwargs):
         if text is not None:
-            kwargs['output'] = {
-                'text': text,
-                'contents': self.location.contents() if self.location is not None else None
-            }
+            kwargs['output'] = {'text': text}
+            if self.entity is not None and self.entity.location is not None:
+                kwargs['output']['contents'] = self.entity.location.contents()
         self.connection.send(kwargs)
 
     def broadcast(self, text=None, location=None, **kwargs):
         if location is None:
-            location = self.location
+            location = self.entity.location
 
         if location is not None:
             if text is not None:
@@ -254,24 +270,24 @@ class Client(Persisted):
                     'user': self.data['username'],
                     'contents': location.contents()
                 }
-            for client in location.clients:
-                client.connection.send(kwargs)
+            for entity in location.entities:
+                print("broadcasting {} to {}".format(text, entity.data['name']))
+                entity.send(kwargs)
         else:
             self.send("Oh no, you're not anywhere.")
 
     def send_location_description(self):
         self.send(output=dict(
-            text=self.location.describe(),
-            header=self.location.data['name'],
-            contents=self.location.contents()
+            text=self.entity.location.describe(),
+            header=self.entity.location.data['name'],
+            contents=self.entity.location.contents()
         ))
 
     @coroutine
     def on_close(self):
-        if self.location is not None:
-            old_location = self.location
-            old_location.remove_client(self)
-            yield old_location.save()
+        if self.entity.location is not None:
+            old_location = self.entity.location
+            yield self.entity.destroy()
             self.broadcast(output={'text': "{} was vapourized.".format(self.data['username']),
                                    'contents': old_location.contents()},
                            location=old_location)
