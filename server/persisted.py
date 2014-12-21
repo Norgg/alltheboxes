@@ -36,7 +36,8 @@ class Persisted(object):
 
     @coroutine
     def destroy(self):
-        result = yield self.world.db.query('delete from {} where id = %s'.format(self.__class__.table), self.id)
+        result = yield self.world.db.query('delete from {} where id = %s'.format(self.__class__.table), [self.id])
+        print(result)
         result.free()
 
     def __getitem__(self, *args, **kwargs):

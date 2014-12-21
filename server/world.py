@@ -2,6 +2,9 @@ from entity import Entity
 
 from location import Location
 
+import psycopg2
+from psycopg2.extras import register_hstore
+
 from queries import OperationalError, TornadoSession
 
 from tornado.gen import coroutine
@@ -12,7 +15,13 @@ class World(object):
         self.entities = {}
         self.locations = {}
         self.editors = []
-        self.db = TornadoSession('postgresql://alltheboxes:alltheboxes@localhost/alltheboxes', pool_max_size=6000)
+        db_url = 'postgresql://alltheboxes:alltheboxes@localhost/alltheboxes'
+        self.db = TornadoSession(db_url, pool_max_size=6000)
+
+        tmp_conn = psycopg2.connect(db_url)
+        register_hstore(tmp_conn, globally=True)
+        tmp_conn.close()
+
         print("Created world.")
 
     @coroutine
@@ -65,5 +74,7 @@ class World(object):
         self.locations[location.id] = location
         return location
 
+    @coroutine
     def update(self):
-        pass
+        for id, entity in list(self.entities.items()):
+            yield entity.update()

@@ -36,7 +36,14 @@ class Entity(Persisted):
     def destroy(self):
         if self.location is not None:
             self.location.remove_entity(self)
+        del self.world.entities[self.id]
         yield super(Entity, self).destroy()
+
+    @coroutine
+    def update(self):
+        if self.data['attributes'].get('guest') and (self.client is None or self.client.connection.stream.closed()):
+            print("Clearing up disconnected guest.")
+            yield self.destroy()
 
     def __repr__(self):
         return 'Entity: "{}"'.format(self.data['name'])

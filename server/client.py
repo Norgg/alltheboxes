@@ -90,7 +90,10 @@ class Client(Persisted):
         if 'chat' in message:
             if self.entity.location is not None:
                 chat_msg = message['chat']
-                self.broadcast(chat_msg)
+                if self.entity.location:
+                    self.entity.location.send_chat(chat_msg)
+                else:
+                    self.send("You seem to be nowhere.")
         if 'login_token' in message:
             yield self.login_with_token(message['login_token'])
         if 'guest' in message:
@@ -144,6 +147,7 @@ class Client(Persisted):
         yield self.save()
 
         self.entity.data['name'] = self.data['username']
+        del self.entity.data['attributes']['guest']
 
         token = yield self.create_token()
         self.send("Registered as {}".format(username), token=token)
@@ -198,14 +202,14 @@ class Client(Persisted):
     @coroutine
     def login_as_guest(self):
         print("New guest connection.")
-        self.entity = yield Entity(self.world, data={'name': self.data['username']}).save()
+        self.entity = yield Entity(self.world, data={'name': self.data['username'],
+                                                     'attributes': {'guest': 'true'}}).save()
         self.entity.client = self
         self.world.entities[self.entity.id] = self.entity
         yield self.world.locations[self.entity.data['location_id']].add_entity(self.entity)
         self.send("Logged in as a guest. Hi {}.".format(self.data['username']))
         self.send_location_description()
-        self.broadcast(output={'text': "{} has formed.".format(self.data['username']),
-                               'contents': self.entity.location.contents()})
+        self.entity.location.send_event("{} has formed.".format(self.data['username']))
 
     @coroutine
     def login_success(self, data):
@@ -217,8 +221,7 @@ class Client(Persisted):
         yield self.world.locations[self.entity.data['location_id']].add_entity(self.entity)
         self.send("Logged in as {}".format(self.data['username']))
         self.send_location_description()
-        self.broadcast(output={'text': "{} woke up.".format(self.data['username']),
-                               'contents': self.entity.location.contents()})
+        self.entity.location.send_event("{} woke up.".format(self.data['username']))
 
     @coroutine
     def create_token(self):
@@ -245,12 +248,8 @@ class Client(Persisted):
             print("{} going {} to {}".format(self.data['username'], exit, new_location.data['name']))
             yield new_location.add_entity(self.entity)
             yield new_location.save()
-            contents = new_location.contents()
             self.send_location_description()
-            self.broadcast(output=dict(
-                text="{} entered.".format(self.data['username']),
-                contents=contents
-            ))
+            self.send_event("{} entered.".format(self.data['username']))
 
     def send(self, text=None, **kwargs):
         if text is not None:
@@ -258,23 +257,6 @@ class Client(Persisted):
             if self.entity is not None and self.entity.location is not None:
                 kwargs['output']['contents'] = self.entity.location.contents()
         self.connection.send(kwargs)
-
-    def broadcast(self, text=None, location=None, **kwargs):
-        if location is None:
-            location = self.entity.location
-
-        if location is not None:
-            if text is not None:
-                kwargs['output'] = {
-                    'text': text,
-                    'user': self.data['username'],
-                    'contents': location.contents()
-                }
-            for entity in location.entities:
-                print("broadcasting {} to {}".format(text, entity.data['name']))
-                entity.send(kwargs)
-        else:
-            self.send("Oh no, you're not anywhere.")
 
     def send_location_description(self):
         self.send(output=dict(
@@ -288,6 +270,4 @@ class Client(Persisted):
         if self.entity.location is not None:
             old_location = self.entity.location
             yield self.entity.destroy()
-            self.broadcast(output={'text': "{} was vapourized.".format(self.data['username']),
-                                   'contents': old_location.contents()},
-                           location=old_location)
+            old_location.send_event("{} was vapourized.".format(self.data['username']))

@@ -89,7 +89,7 @@ var ClientMethods = {
         self = this;
         this.setContents([]);
         if (this.connected) {
-            this.addOutput({ text: "Disconnected at " + new Date().toUTCString() + ", attempting to reconnect...\n" });
+            this.addOutput({text: "Disconnected at " + new Date().toUTCString() + ", attempting to reconnect...\n"});
         }
         this.connected = false;
 

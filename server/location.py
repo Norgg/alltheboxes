@@ -32,16 +32,32 @@ class Location(Persisted):
             if save:
                 yield entity.save()
         entity.location = self
+        self.send_contents()
         print("Added entity {} to {}".format(entity, self))
 
     def remove_entity(self, entity):
         self.entities.remove(entity)
         entity.location = None
+        self.send_contents()
         print("Removed client {} from {}".format(entity, self))
 
     def contents(self):
         contents = [entity.contents_data() for entity in self.entities]
         return contents
+
+    def send_contents(self):
+        self.broadcast(output={'contents': self.contents()})
+
+    def send_chat(self, username, text):
+        self.broadcast(output={'text': text, 'user': username})
+
+    def send_event(self, text):
+        self.broadcast(output={'text': text})
+
+    def broadcast(self, **kwargs):
+        for entity in self.entities:
+            print("broadcasting {} to {}".format(kwargs, entity.data['name']))
+            entity.send(kwargs)
 
     @coroutine
     def save(self):
@@ -50,7 +66,8 @@ class Location(Persisted):
         for name, to_id in exits.items():
             try:
                 results = yield self.world.db.query(
-                    'insert into exits (location_from, location_to, name) select %s, %s, %s where not exists (select 1 from exits where location_from = %s and location_to = %s);',  # noqa
+                    'insert into exits (location_from, location_to, name) select %s, %s, %s \
+                        where not exists (select 1 from exits where location_from = %s and location_to = %s);',
                     [self.id, to_id, name, self.id, to_id]
                 )
                 results.free()
