@@ -36,7 +36,10 @@ class Location(Persisted):
         print("Added entity {} to {}".format(entity, self))
 
     def remove_entity(self, entity):
-        self.entities.remove(entity)
+        if entity in self.entities:
+            self.entities.remove(entity)
+        else:
+            print("Warning: removed entity {} from location it wasn't in: {}".format(entity, self))
         entity.location = None
         self.send_contents()
         print("Removed client {} from {}".format(entity, self))

@@ -27,9 +27,6 @@ class Client(Persisted):
         if self.data.get('username') is None:
             self.data['username'] = randname(5 + int(random() * 3))
             self.id = None
-            self.guest = True
-        else:
-            self.guest = False
 
         self.entity = None
 
@@ -147,8 +144,8 @@ class Client(Persisted):
         yield self.save()
 
         self.entity.data['name'] = self.data['username']
-        if self.entity.data.get('attributes') and self.entity.data['attributes'].get('guest'):
-            del self.entity.data['attributes']['guest']
+        if self.entity.data.get('aspects') and 'guest' in self.entity.data['aspets']:
+            self.entity.data['aspects'].remove('guest')
         yield self.entity.save()
 
         token = yield self.create_token()
@@ -244,7 +241,7 @@ class Client(Persisted):
         if new_location_id is None:
             self.send("Couldn't find exit {}".format(exit))
         else:
-            old_location.remove_client(self)
+            old_location.remove_entity(self)
             yield old_location.save()
             new_location = self.world.locations.get(new_location_id)
             print("{} going {} to {}".format(self.data['username'], exit, new_location.data['name']))
