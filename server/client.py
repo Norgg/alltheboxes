@@ -29,6 +29,7 @@ class Client(Persisted):
             self.id = None
 
         self.entity = None
+        self.ghosted = False
 
         self.commands = {
             'help': self.help,
@@ -216,12 +217,21 @@ class Client(Persisted):
         self.data = data
         self.id = data['id']
         self.entity = self.world.entities[data['entity_id']]
+
+        if self.entity.client is not None:
+            try:
+                self.entity.client.ghosted = True
+                self.entity.client.send("You have been replaced.", disconnect=True)
+            except WebSocketClosedError:
+                pass
+        else:
+            self.entity.location.send_event("{} woke up.".format(self.data['username']))
+
         self.entity.client = self
         print("{} logged in successfully.".format(self.data['username']))
         yield self.world.locations[self.entity.data['location_id']].add_entity(self.entity)
         self.send("Logged in as {}".format(self.data['username']))
         self.send_location_description()
-        self.entity.location.send_event("{} woke up.".format(self.data['username']))
 
     @coroutine
     def create_token(self):
@@ -242,7 +252,7 @@ class Client(Persisted):
         if new_location_id is None:
             self.send("Couldn't find exit {}".format(exit))
         else:
-            old_location.remove_entity(self)
+            old_location.remove_entity(self.entity)
             yield old_location.save()
             new_location = self.world.locations.get(new_location_id)
             print("{} going {} to {}".format(self.data['username'], exit, new_location.data['name']))
@@ -278,4 +288,5 @@ class Client(Persisted):
                 yield self.entity.destroy()
                 old_location.send_event("{} was vapourized.".format(self.data['username']))
             else:
-                self.entity.location.send_event("{} went to sleep.".format(self.data['username']))
+                if not self.ghosted:
+                    self.entity.location.send_event("{} went to sleep.".format(self.data['username']))
