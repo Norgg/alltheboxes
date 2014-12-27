@@ -34,7 +34,8 @@ class Client(Persisted):
             'help': self.help,
             'go': self.go,
             'register': self.register,
-            'login': self.login
+            'login': self.login,
+            'look': self.look
         }
 
     @coroutine
@@ -249,6 +250,11 @@ class Client(Persisted):
             yield new_location.save()
             self.send_location_description()
             self.send_event("{} entered.".format(self.data['username']))
+
+    @coroutine
+    def look(self, cmd_arg):
+        if self.entity.location is not None:
+            self.send_location_description()
 
     def send(self, text=None, **kwargs):
         if text is not None:

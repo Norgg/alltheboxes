@@ -60,7 +60,11 @@ class Location(Persisted):
     def broadcast(self, **kwargs):
         for entity in self.entities:
             print("broadcasting {} to {}".format(kwargs, entity.data['name']))
-            entity.send(kwargs)
+            try:
+                entity.send(kwargs)
+            except:
+                print("Couldn't send to {}".format(entity))
+                traceback.print_exc()
 
     @coroutine
     def save(self):

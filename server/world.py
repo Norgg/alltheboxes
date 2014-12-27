@@ -44,7 +44,7 @@ class World(object):
             print('Error connecting to the database: %s', error)
 
         try:
-            locations = yield self.db.query('select * from locations order by created;')
+            locations = yield self.db.query('select * from locations order by id;')
             print(locations)
 
             first = True
