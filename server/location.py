@@ -10,7 +10,10 @@ class Location(Persisted):
 
     def __init__(self, *args, **kwargs):
         super(Location, self).__init__(*args, **kwargs)
-        self.data['description'] = "No description yet."
+
+        if self.data.get('description') is None:
+            self.data['description'] = "No description yet."
+
         self.data['exits'] = {}
         self.entities = []
 
