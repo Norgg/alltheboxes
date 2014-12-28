@@ -1,66 +1,80 @@
 body {
-  background-color: white;
-  margin: 0px;
-  padding: 0px;
-  font-family: helvetica;
+    background-color: white;
+    margin: 0px;
+    padding: 0px;
+    font-family: helvetica;
 }
 
 #output {
-  position: absolute;
-  bottom: 6.5rem;
-  padding: 3px;
-  margin: 0px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  width: 100%;
-  font-family: helvetica;
-  box-sizing: border-box;
+    position: absolute;
+    bottom: 6.5rem;
+    padding: 3px;
+    margin: 0px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    width: 100%;
+    font-family: helvetica;
+    box-sizing: border-box;
 }
 
 #contents {
-  position: absolute;
-  bottom: 0rem;
-  height: 5rem;
-  width: 100%;
-  margin: 0px;
-  padding: 2px;
-  overflow-y: auto;
-  box-sizing: border-box;
+    position: absolute;
+    bottom: 0rem;
+    height: 5rem;
+    width: 100%;
+    margin: 0px;
+    padding: 2px;
+    overflow-y: auto;
+    box-sizing: border-box;
 }
 
 #contents li {
-  list-style-type: none;
-  min-width: 6rem;
-  height: 1.2rem;
-  border: 1px solid black;
-  padding-left: 2px;
-  padding-right: 2px;
-  margin-left: -1px;
-  margin-bottom: -1px;
-  float: left;
-  text-align: center;
+    list-style-type: none;
+    min-width: 6rem;
+    height: 1.2rem;
+    border: 1px solid black;
+    padding-left: 2px;
+    padding-right: 2px;
+    margin-left: -1px;
+    margin-bottom: -1px;
+    float: left;
+    text-align: center;
 }
 
 #input {
-  position: absolute;
-  bottom: 5rem;
-  height: 1.5rem;
-  margin: 0px;
-  padding-left: 5px;
-  width: 100%;
-  border: none;
-  background: #eee;
-  box-sizing: border-box;
+    position: absolute;
+    bottom: 5rem;
+    height: 1.5rem;
+    margin: 0px;
+    padding-left: 5px;
+    width: 100%;
+    border: none;
+    background: #eee;
+    box-sizing: border-box;
 }
 
 #input.cmd {
-  background: #afa;
+    background: #afa;
 }
 
-.name {
-  color: #777;
+.output {
+}
+
+.user {
+    color: #777;
+    display: inline;
+}
+
+.user::after {
+    content: ': ';
+}
+
+.chat {
+    display: inline;
 }
 
 .header {
-  font-weight: bold;
+    font-weight: bold;
+    display: block;
 }
+

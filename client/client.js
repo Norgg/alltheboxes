@@ -1,33 +1,33 @@
 var ClientMethods = {
-    addOutput: function(data) {
-        console.log(data);
-        var msg = "";
+    addOutput: function(lines) {
+        var self = this;
 
-        if (data.user) {
-            msg = '<span class="name">'+escapeHTML(data.user)+"</span>: ";
-        }
-        if (data.header) {
-            msg = '<span class="header">'+escapeHTML(data.header)+"</span>\n";
-        }
-        if (data.contents) {
-            this.setContents(data.contents);
-        }
+        var wrapDiv = $('<div class="outputWrap"></div>');
+        $.each(lines, function(idx, line) {
+            console.log(lines);
+            var div = $('<div></div>');
+            div.addClass('output');
+            if (line.tags) {
+                $.each(line.tags, function(tagIdx, tag) {
+                    div.addClass(tag);
+                });
+            }
+            
+            div.html(escapeHTML(line.text));
+            wrapDiv.append(div);
+        });
+        
+        self.output.append(wrapDiv);
 
-        if (data.text) {
-            console.log(data.text);
-            msg += escapeHTML(data.text)+"\n";
-            this.output.append(msg);
+        var text = self.output.text();
 
-            var text = this.output.text();
-            if (text.length > this.bufSize) this.output.text(text.slice(-this.bufSize));
-            window.localStorage.log = this.output.html();
+        // TODO: Does self rip out formatting? This probably rips out formatting...
+        if (text.length > self.bufSize) self.output.text(text.slice(-self.bufSize));
+        window.localStorage.log = self.output.html();
 
-            this.output.animate({scrollTop: this.output[0].scrollHeight}, 50);
-
-            this.resize();
-
-            this.output.linkify();
-        }
+        self.output.animate({scrollTop: self.output[0].scrollHeight}, 50);
+        self.resize();
+        self.output.linkify();
 
         if (!document.hasFocus()) document.title = "*alltheboxes";
     },
@@ -70,7 +70,7 @@ var ClientMethods = {
     onConnect: function(evt) {
         //TODO: Move this onto the server and have it save and replay recent history per location if there's an item there recording it.
         this.output.html(window.localStorage.log.slice(-this.bufSize));
-        this.addOutput({text: "Logging in at " + new Date().toUTCString()});
+        this.addOutput([{text: "Logging in at " + new Date().toUTCString()}]);
 
         this.connected = true;
 
@@ -89,28 +89,39 @@ var ClientMethods = {
         self = this;
         this.setContents([]);
         if (this.connected) {
-            this.addOutput({text: "Disconnected at " + new Date().toUTCString() + ", attempting to reconnect...\n"});
+            if (this.reconnect) {
+                this.addOutput([{text: "Disconnected at " + new Date().toUTCString() + ", attempting to reconnect...\n"}]);
+            } else {
+                this.addOutput([{text: "Disconnected at " + new Date().toUTCString() + ".\n"}]);
+            }
         }
         this.connected = false;
 
-        setTimeout(function() {
-            console.log("Trying to reconnect.");
-            var url = 'ws://'+location.hostname+(location.port ? ':'+location.port: '') + '/ws';
-            self.socket = new WebSocket(url);
-            
-            self.socket.onopen = function(evt) { self.onConnect(evt); };
-            self.socket.onclose = function(evt) { self.onDisconnect(evt); }
-            self.socket.onmessage = function(evt) { self.onMessage(evt); }
-        }, 1000);
+        if (this.reconnect) {
+            setTimeout(function() {
+                console.log("Trying to reconnect.");
+                var url = 'ws://'+location.hostname+(location.port ? ':'+location.port: '') + '/ws';
+                self.socket = new WebSocket(url);
+
+                self.socket.onopen = function(evt) { self.onConnect(evt); };
+                self.socket.onclose = function(evt) { self.onDisconnect(evt); }
+                self.socket.onmessage = function(evt) { self.onMessage(evt); }
+            }, 1000);
+        }
     },
 
     onMessage: function(evt) {
         console.log(evt);
         var msg = JSON.parse(evt.data);
-
+        
+        if (msg.contents) this.setContents(msg.contents);
         if (msg.output) this.addOutput(msg.output);
         if (msg.refresh) window.location.reload(true);
-        if (msg.token) this.setToken(msg.token)
+        if (msg.token) this.setToken(msg.token);
+        if (msg.disconnect) {
+            this.reconnect = false;
+            this.socket.close();
+        }
     },
 
     keydown: function(evt) {
@@ -200,6 +211,7 @@ var Client = function() {
     this.history = [];
     this.historyIdx = 0;
     this.originalInput = "";
+    this.reconnect = true;
 
     $(window).resize(function(evt) {self.resize();});
     $(window).focus(function(evt) {document.title="alltheboxes";});

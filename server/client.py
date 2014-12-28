@@ -268,21 +268,19 @@ class Client(Persisted):
 
     def send(self, text=None, **kwargs):
         if text is not None:
-            kwargs['output'] = {'text': text}
+            kwargs['output'] = [{'text': text}]
             if self.entity is not None and self.entity.location is not None:
-                kwargs['output']['contents'] = self.entity.location.contents()
+                kwargs['contents'] = self.entity.location.contents()
         self.connection.send(kwargs)
 
     def send_location_description(self):
-        self.send(output=dict(
-            text=self.entity.location.describe(),
-            header=self.entity.location.data['name'],
-            contents=self.entity.location.contents()
-        ))
+        self.send(output=[{'tags': ['header'], 'text': self.entity.location.data['name']},
+                          {'text': self.entity.location.describe()}],
+                  contents=self.entity.location.contents())
 
     @coroutine
     def on_close(self):
-        if self.entity.location is not None:
+        if self.entity is not None and self.entity.location is not None:
             if self.id is None:
                 old_location = self.entity.location
                 yield self.entity.destroy()

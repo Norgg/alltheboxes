@@ -1,5 +1,7 @@
 var RoomEditorMethods = {
     //TODO: Split this up and move into the initialiser?
+    // Make it so that dragging a connector before naming an exit still works and doesn't just forget it.
+    //
     makeRoomBox: function() {
         var self = this;
         var editor = this.editor;

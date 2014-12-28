@@ -52,13 +52,14 @@ class Location(Persisted):
         return contents
 
     def send_contents(self):
-        self.broadcast(output={'contents': self.contents()})
+        self.broadcast(contents=self.contents())
 
     def send_chat(self, username, text):
-        self.broadcast(output={'text': text, 'user': username})
+        self.broadcast(output=[{'tags': ['user'], 'text': username},
+                               {'tags': ['chat'], 'text': text}])
 
     def send_event(self, text):
-        self.broadcast(output={'text': text})
+        self.broadcast(output=[{'text': text}])
 
     def broadcast(self, **kwargs):
         for entity in self.entities:
