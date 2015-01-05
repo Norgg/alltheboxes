@@ -3,7 +3,7 @@ from phusion/baseimage
 env DEBIAN_FRONTEND noninteractive
 run apt-get update
 run apt-get upgrade -y
-run apt-get install -y python3 python3-pip 
+run apt-get install -y python3 python3-pip
 run apt-get install -y postgresql-contrib postgresql-server-dev-all
 
 run mkdir -p /opt/alltheboxes/server

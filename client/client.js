@@ -12,16 +12,16 @@ var ClientMethods = {
                     div.addClass(tag);
                 });
             }
-            
+
             div.html(escapeHTML(line.text));
             wrapDiv.append(div);
         });
-        
+
         self.output.append(wrapDiv);
 
         var text = self.output.text();
 
-        // TODO: Does self rip out formatting? This probably rips out formatting...
+        // TODO: Does self.text() rip out formatting? This probably rips out formatting...
         if (text.length > self.bufSize) self.output.text(text.slice(-self.bufSize));
         window.localStorage.log = self.output.html();
 
@@ -225,7 +225,9 @@ var Client = function() {
 
     if (!window.localStorage.log) window.localStorage.log = "";
 
-    $(window).on('unload', function(evt) { window.localStorage.log += "Goodbye at " + new Date().toUTCString() + "\n\n"; });
+    $(window).on('unload', function(evt) { 
+        self.addOutput([{ text: "Goodbye at " + new Date().toUTCString(), tags: ["goodbye"]}]);
+    });
 };
 
 Client.prototype = ClientMethods;

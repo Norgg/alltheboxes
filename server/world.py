@@ -44,6 +44,12 @@ class World(object):
             print('Error connecting to the database: %s', error)
 
         try:
+            locations = yield self.db.query('select * from locations order by id limit 1;')
+        except psycopg2.ProgrammingError:
+            print('Initialising database.')
+            yield self.wipe()
+
+        try:
             locations = yield self.db.query('select * from locations order by id;')
             print(locations)
 
