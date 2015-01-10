@@ -36,7 +36,8 @@ class Client(Persisted):
             'go': self.go,
             'register': self.register,
             'login': self.login,
-            'look': self.look
+            'look': self.look,
+            'me': self.emote
         }
 
     @coroutine
@@ -277,6 +278,12 @@ class Client(Persisted):
         self.send(output=[{'tags': ['header'], 'text': self.entity.location.data['name']},
                           {'text': self.entity.location.describe()}],
                   contents=self.entity.location.contents())
+
+    def emote(self, cmd_arg):
+        self.entity.location.broadcast(output=[
+            {'tags': ['actionuser'], 'text': self.data['username']},
+            {'tags': ['action'], 'text': " {}".format(cmd_arg)}
+        ])
 
     @coroutine
     def on_close(self):

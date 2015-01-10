@@ -48,6 +48,19 @@ body {
     font-variant: small-caps;
 }
 
+.actionuser {
+    padding-left: 30px;
+    padding-top: 10px;
+    padding-bottom: 4px;
+    color: #4455aa;
+    display: inline;
+}
+
+.action {
+    color: #4455aa;
+    display: inline;
+}
+
 #input {
     position: absolute;
     bottom: 3.8rem;
