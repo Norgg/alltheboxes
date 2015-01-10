@@ -101,11 +101,14 @@ class Client(Persisted):
 
     @coroutine
     def on_cmd(self, cmd, cmd_arg):
-        command = self.commands[cmd]
+        command = self.commands.get(cmd)
+        print(self.entity.location.data['exits'])
         if command is not None:
             yield command(cmd_arg)
+        elif self.entity.location is not None and cmd in self.entity.location.data['exits']:
+            self.go(cmd)
         else:
-            print("Command {} not recognised.".format(cmd))
+            self.send("Don't know how to {}.".format(cmd))
 
     @coroutine
     def help(self, cmd_arg):
