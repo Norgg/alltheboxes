@@ -1,3 +1,5 @@
+import os
+
 from hashlib import sha512
 from inspect import cleandoc
 from random import random
@@ -209,12 +211,10 @@ class Client(Persisted):
         print("New guest connection.")
         self.entity = yield Entity(self.world, data={'name': self.data['username'],
                                                      'attributes': {'guest': 'true'}}).save()
-        self.entity.client = self
         self.world.entities[self.entity.id] = self.entity
-        yield self.world.locations[self.entity.data['location_id']].add_entity(self.entity)
         self.send("Logged in as a guest. Hi {}.".format(self.data['username']))
-        self.send_location_description()
         self.entity.location.send_event("{} has formed.".format(self.data['username']))
+        self.post_login()
 
     @coroutine
     def login_success(self, data):
@@ -231,11 +231,18 @@ class Client(Persisted):
         else:
             self.entity.location.send_event("{} woke up.".format(self.data['username']))
 
-        self.entity.client = self
         print("{} logged in successfully.".format(self.data['username']))
-        yield self.world.locations[self.entity.data['location_id']].add_entity(self.entity)
         self.send("Logged in as {}".format(self.data['username']))
+        yield self.post_login()
+
+    @coroutine
+    def post_login(self):
+        self.entity.client = self
+        yield self.world.locations[self.entity.data['location_id']].add_entity(self.entity)
         self.send_location_description()
+        styles = os.listdir('../client/styles/')
+        print(styles)
+        self.send(styles=styles)
 
     @coroutine
     def create_token(self):

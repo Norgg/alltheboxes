@@ -1,14 +1,22 @@
 /* theme: drab facebook dystopia */
 
 body {
-    background-color: #f4f4f4;
+    background-color: #ff00ff;
     margin: 0px;
     padding: 0px;
-    font-family: "Iowan Old Style", serif;
+    font-family: monospace;
+    color: #ff0000;
+}
+
+#styleSwapDiv {
+    position: absolute;
+    right: 20px;
+    top: 0px;
+    z-index: 1000;
 }
 
 #output {
-    background-color: white;
+    background-color: #000000;
     position: absolute;
     bottom: 6.5rem;
     padding: 4px 15% 10px 15%;
@@ -31,7 +39,7 @@ body {
 
 .chat {
     display: inline;
-    color: #4455aa;
+    color: #00cc00;
     padding-left: 45px;
     padding-bottom: 4px;
 }
@@ -44,7 +52,7 @@ body {
     padding-bottom: 4px;
     display: block;
     font-weight: bold;
-    color: #4455aa;
+    color: #0055ff;
     font-variant: small-caps;
 }
 
@@ -71,7 +79,8 @@ body {
     font-size: large;
     box-shadow: inset 0 1px 1px #ccc;
     border: none;
-    background: #fff;
+    background: #000;
+    color: #ccc;
     box-sizing: border-box;
 }
 

@@ -110,6 +110,18 @@ var ClientMethods = {
         }
     },
 
+    setStyles: function(styles) {
+        var styleSwap = $('#styleSwap');
+        styleSwap.empty();
+        $.each(styles, function(i, style) {
+          console.log(style);
+          var option = $('<option>');
+          option.val('/styles/' + style);
+          option.text(style);
+          styleSwap.append(option);
+        });
+    },
+
     onMessage: function(evt) {
         console.log(evt);
         var msg = JSON.parse(evt.data);
@@ -118,6 +130,7 @@ var ClientMethods = {
         if (msg.output) this.addOutput(msg.output);
         if (msg.refresh) window.location.reload(true);
         if (msg.token) this.setToken(msg.token);
+        if (msg.styles) this.setStyles(msg.styles);
         if (msg.disconnect) {
             this.reconnect = false;
             this.socket.close();
@@ -217,8 +230,18 @@ var Client = function() {
     $(window).focus(function(evt) {document.title="alltheboxes";});
 
     $(this.input).blur(function(evt) {
-        function refocus() {if (!window.getSelection().toString().length) self.input.focus(); else setTimeout(refocus, 100)};
+        function refocus() {
+            if (!window.getSelection().toString().length && !$('#styleSwap').is(':focus')) {
+                self.input.focus();
+            } else { 
+                setTimeout(refocus, 100);
+            }
+        };
         setTimeout(refocus, 100);
+    });
+
+    $('#styleSwap').on('change', function(evt) {
+        $('#style')[0].href=this.value;
     });
 
     $(window).on('copy', function(evt) {setTimeout(function() {self.input.focus();}, 100);});
