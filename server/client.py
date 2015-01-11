@@ -240,8 +240,7 @@ class Client(Persisted):
         self.entity.client = self
         yield self.world.locations[self.entity.data['location_id']].add_entity(self.entity)
         self.send_location_description()
-        styles = os.listdir('../client/styles/')
-        print(styles)
+        styles = sorted(os.listdir('../client/styles/'))
         self.send(styles=styles)
 
     @coroutine
