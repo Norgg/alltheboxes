@@ -1,13 +1,16 @@
 import os
 
 from hashlib import sha512
-from inspect import cleandoc
 from random import random
 from uuid import uuid4
+
+from editor import Editor
 
 from entity import Entity
 
 from persisted import Persisted
+
+from player import Player
 
 from randname import randname
 
@@ -33,14 +36,8 @@ class Client(Persisted):
         self.entity = None
         self.ghosted = False
 
-        self.commands = {
-            'help': self.help,
-            'go': self.go,
-            'register': self.register,
-            'login': self.login,
-            'look': self.look,
-            'me': self.emote
-        }
+        self.editor = Editor(self)
+        self.player = Player(self)
 
     @coroutine
     def on_message(self, message):
@@ -83,12 +80,12 @@ class Client(Persisted):
                     except WebSocketClosedError:
                         self.world.editors.remove(client)
 
-        # client messages:
+        # player messages:
         if 'cmd' in message:
             cmd = message['cmd'].split()[0]
-            cmd_arg = message['cmd'][len(cmd) + 1:]
+            cmd_arg = message['cmd'][len(cmd) + 1:].strip()
             print('cmd: "{}", cmd_arg: "{}"'.format(cmd, cmd_arg))
-            yield self.on_cmd(cmd, cmd_arg)
+            yield self.player.on_cmd(cmd, cmd_arg)
         if 'chat' in message:
             if self.entity.location is not None:
                 chat_msg = message['chat']
@@ -96,51 +93,15 @@ class Client(Persisted):
                     self.entity.location.send_chat(self.data['username'], chat_msg)
                 else:
                     self.send("You seem to be nowhere.")
+
+        # universal messages:
         if 'login_token' in message:
             yield self.login_with_token(message['login_token'])
         if 'guest' in message:
             yield self.login_as_guest()
 
     @coroutine
-    def on_cmd(self, cmd, cmd_arg):
-        command = self.commands.get(cmd)
-        print(self.entity.location.data['exits'])
-        if command is not None:
-            yield command(cmd_arg)
-        elif self.entity.location is not None and cmd in self.entity.location.data['exits']:
-            self.go(cmd)
-        else:
-            self.send("Don't know how to {}.".format(cmd))
-
-    @coroutine
-    def help(self, cmd_arg):
-        """Display this help text."""
-        if cmd_arg is "":
-            for command, func in self.commands.items():
-                self.send(output=dict(text=cleandoc(func.__doc__), header=command))
-        else:
-            command = cmd_arg.strip()
-            if command in self.commands:
-                self.send(output=dict(text=cleandoc(self.commands[command].__doc__), header=command))
-            else:
-                self.send("Command {} not found.".format(command))
-
-    @coroutine
-    def register(self, cmd_arg):
-        """
-        /register username, password
-        Create a new account with the provided username and password.  Your progress as a guest will be saved.
-        """
-        args = cmd_arg.split()
-        if len(args) != 2:
-            self.send("Usage: /register username password")
-
-        if len(args) == 2:
-            args.append(None)
-
-        # Email currently unused.
-        username, password, email = args
-
+    def register(self, username, password, email):
         print("Registering {}".format(username))
 
         self.data['username'] = username
@@ -161,17 +122,7 @@ class Client(Persisted):
         print(self.world.entities)
 
     @coroutine
-    def login(self, cmd_arg):
-        """
-        /login username password
-        Log in to an existing account.  If you are using a guest account you will lose access to it.
-        """
-        args = cmd_arg.split()
-        if(len(args) != 2):
-            self.send("Usage: /login username password")
-
-        username, password = cmd_arg.split()
-
+    def login(self, username, password):
         result = yield self.world.db.query('select * from players where username = %s', [username])
 
         if result:
@@ -209,8 +160,9 @@ class Client(Persisted):
     @coroutine
     def login_as_guest(self):
         print("New guest connection.")
-        self.entity = yield Entity(self.world, data={'name': self.data['username'],
-                                                     'attributes': {'guest': 'true'}}).save()
+        self.entity = yield Entity(self.world, data={'name': self.data['username'], 'aspects': ['guest']}).save()
+        yield self.world.locations[self.entity.data['location_id']].add_entity(self.entity)
+        self.entity.client = self
         self.world.entities[self.entity.id] = self.entity
         self.send("Logged in as a guest. Hi {}.".format(self.data['username']))
         self.entity.location.send_event("{} has formed.".format(self.data['username']))
@@ -238,10 +190,10 @@ class Client(Persisted):
     @coroutine
     def post_login(self):
         self.entity.client = self
-        yield self.world.locations[self.entity.data['location_id']].add_entity(self.entity)
         self.send_location_description()
         styles = sorted(os.listdir('../client/styles/'))
         self.send(styles=styles)
+        self.player.send_location_description()
 
     @coroutine
     def create_token(self):
@@ -250,49 +202,12 @@ class Client(Persisted):
         result.free()
         return token
 
-    @coroutine
-    def go(self, exit):
-        """
-        /go direction
-        Go through an exit in a direction
-        """
-        old_location = self.entity.location
-
-        new_location_id = old_location.data['exits'].get(exit)
-        if new_location_id is None:
-            self.send("Couldn't find exit {}".format(exit))
-        else:
-            old_location.remove_entity(self.entity)
-            yield old_location.save()
-            new_location = self.world.locations.get(new_location_id)
-            print("{} going {} to {}".format(self.data['username'], exit, new_location.data['name']))
-            yield new_location.add_entity(self.entity)
-            yield new_location.save()
-            self.send_location_description()
-            self.send_event("{} entered.".format(self.data['username']))
-
-    @coroutine
-    def look(self, cmd_arg):
-        if self.entity.location is not None:
-            self.send_location_description()
-
     def send(self, text=None, **kwargs):
         if text is not None:
             kwargs['output'] = [{'text': text}]
             if self.entity is not None and self.entity.location is not None:
                 kwargs['contents'] = self.entity.location.contents()
         self.connection.send(kwargs)
-
-    def send_location_description(self):
-        self.send(output=[{'tags': ['header'], 'text': self.entity.location.data['name']},
-                          {'text': self.entity.location.describe()}],
-                  contents=self.entity.location.contents())
-
-    def emote(self, cmd_arg):
-        self.entity.location.broadcast(output=[
-            {'tags': ['actionuser'], 'text': self.data['username']},
-            {'tags': ['action'], 'text': " {}".format(cmd_arg)}
-        ])
 
     @coroutine
     def on_close(self):

@@ -87,9 +87,7 @@ class World(object):
 
     @coroutine
     def update(self):
-        print("Updating world.")
         for id, entity in list(self.entities.items()):
-            print("Updating {}".format(entity))
             try:
                 yield entity.update()
             except Exception:

@@ -4,8 +4,6 @@ from datetime import datetime
 
 from client import Client
 
-from editor import Editor
-
 from tornado.gen import coroutine
 from tornado.httpserver import HTTPServer
 from tornado.web import Application, RequestHandler, StaticFileHandler
@@ -31,7 +29,6 @@ class ClientConnection(WebSocketHandler):
         print("New connection.")
         self.application.server.clients.append(self)
         self.client = Client(self)
-        self.editor = Editor(self)
 
     @coroutine
     def on_message(self, message):

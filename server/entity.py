@@ -22,7 +22,7 @@ class Entity(Persisted):
     @coroutine
     def save(self, *args, **kwargs):
         yield super(Entity, self).save(*args, **kwargs)
-        if self.data['location_id'] is None:
+        if self.data.get('location_id') is None:
             self.data['location_id'] = self.world.start_location.id
             print("Put entity in start location")
             yield self.save()
@@ -46,8 +46,10 @@ class Entity(Persisted):
     @coroutine
     def update(self):
         if self.data.get('aspects') is not None:
-            if 'guest' in self.data['aspects'] and (self.client is None or self.client.connection.stream.closed()):
-                yield self.destroy()
+            if 'guest' in self.data['aspects']:
+                if self.client is None or self.client.connection.stream.closed():
+                    print("Destroying disconnected guest {}.".format(self.data['name']))
+                    yield self.destroy()
 
             if 'npc' in self.data['aspects']:
                 if (random() < 0.1):

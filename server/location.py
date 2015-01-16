@@ -63,7 +63,6 @@ class Location(Persisted):
 
     def broadcast(self, **kwargs):
         for entity in self.entities:
-            print("broadcasting {} to {}".format(kwargs, entity.data['name']))
             try:
                 entity.send(kwargs)
             except:
