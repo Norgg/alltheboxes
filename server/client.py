@@ -172,6 +172,10 @@ class Client(Persisted):
     def login_success(self, data):
         self.data = data
         self.id = data['id']
+
+        if self.entity is not None and 'guest' in self.entity.data['aspects']:
+          self.entity.destroy()
+
         self.entity = self.world.entities[data['entity_id']]
 
         if self.entity.client is not None:
@@ -185,12 +189,10 @@ class Client(Persisted):
 
         print("{} logged in successfully.".format(self.data['username']))
         self.send("Logged in as {}".format(self.data['username']))
-        yield self.post_login()
+        self.post_login()
 
-    @coroutine
     def post_login(self):
         self.entity.client = self
-        self.send_location_description()
         styles = sorted(os.listdir('../client/styles/'))
         self.send(styles=styles)
         self.player.send_location_description()
