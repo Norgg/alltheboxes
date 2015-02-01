@@ -86,6 +86,12 @@ class World(object):
         return location
 
     @coroutine
+    def make_entity(self, name):
+        entity = yield Entity(self, {'name': name}).save()
+        self.entities[entity.id] = entity
+        return entity
+
+    @coroutine
     def update(self):
         for id, entity in list(self.entities.items()):
             try:

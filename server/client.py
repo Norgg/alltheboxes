@@ -45,16 +45,19 @@ class Client(Persisted):
 
         # editor messages:
         if 'getWorld' in message:
-            world_data = {id: location.data for id, location in self.world.locations.items()}
+            world_data = {
+                'locations': {id: location.data for id, location in self.world.locations.items()},
+                'entities': {id: entity.data for id, entity in self.world.entities.items()}
+            }
             self.send(world=world_data)
             self.world.editors.append(self)
         if 'createRoom' in message:
             location = yield self.world.make_location(message['createRoom'])
-            for client in self.world.editors:
-                try:
-                    client.send(roomCreated=location.data)
-                except WebSocketClosedError:
-                    self.world.editors.remove(client)
+            self.editor_broadcast(roomCreated=location.data)
+        if 'createEntity' in message:
+            data = message['createEntity']
+            entity = yield self.world.make_entity(message['createEntity'])
+            self.editor_broadcast(entityCreated=entity.data)
         if 'editRoom' in message:
             data = message['editRoom']
             print(data)
@@ -62,11 +65,7 @@ class Client(Persisted):
             if location is not None:
                 location.data = data
                 yield location.save()
-                for client in self.world.editors:
-                    try:
-                        client.send(roomUpdated=location.data)
-                    except WebSocketClosedError:
-                        self.world.editors.remove(client)
+                self.editor_broadcast(roomUpdated=location.data)
         if 'moveRoom' in message:
             data = message['moveRoom']
             location = self.world.locations.get(data['id'])
@@ -173,10 +172,12 @@ class Client(Persisted):
         self.data = data
         self.id = data['id']
 
+        old_entity = self.entity;
         if self.entity is not None and 'guest' in self.entity.data['aspects']:
           self.entity.destroy()
 
         self.entity = self.world.entities[data['entity_id']]
+        yield self.entity.save()
 
         if self.entity.client is not None:
             try:
@@ -210,6 +211,14 @@ class Client(Persisted):
             if self.entity is not None and self.entity.location is not None:
                 kwargs['contents'] = self.entity.location.contents()
         self.connection.send(kwargs)
+
+    def editor_broadcast(self, **kwargs):
+        for client in self.world.editors:
+            try:
+                client.send(**kwargs)
+            except WebSocketClosedError:
+                self.world.editors.remove(client)
+        
 
     @coroutine
     def on_close(self):
