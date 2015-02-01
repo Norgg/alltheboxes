@@ -18,18 +18,22 @@ body, #editor {
   position: relative;
 }
 
-.roomHead {
+.entityEditbox {
+  background-color: #ccccff;
+}
+
+.roomHead, .entityHead {
   cursor: pointer;
   text-align: center;
 }
 
-.roomHead h1 {
+.roomHead h1, .entityHead h1 {
   font-size: 1.1rem;
   margin-top: 0px;
   margin-bottom: 0px;
 }
 
-.roomContent {
+.roomContent, .entityConent {
   display: none;
 }
 
@@ -39,7 +43,13 @@ body, #editor {
 	top: 2px;
 }
 
-#newRoomName {
+#newEntity {
+	position: absolute;
+  left: 2px;
+	top: 2em;
+}
+
+#newRoomName, #newEntityName {
 	width: 7rem;
 }
 
