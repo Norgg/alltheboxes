@@ -4,7 +4,7 @@ from tornado.gen import coroutine
 
 
 class Player(object):
-    commands = ['help', 'go', 'register', 'login', 'look', 'me']
+    commands = ['help', 'go', 'register', 'login', 'look', 'me', 'get']
 
     def __init__(self, client):
         self.client = client
@@ -116,13 +116,14 @@ class Player(object):
                         self.client.send(output=[{'text': desc, 'tags': ['description']}])
                         break
 
-    def emote(self, cmd_arg):
+    @coroutine
+    def me(self, cmd_arg):
         """
         /me [action]
         Describe doing a thing.
         """
-        self.entity.location.broadcast(output=[
-            {'tags': ['actionuser'], 'text': self.data['username']},
+        self.client.entity.location.broadcast(output=[
+            {'tags': ['actionuser'], 'text': self.client.data['username']},
             {'tags': ['action'], 'text': " {}".format(cmd_arg)}
         ])
 
