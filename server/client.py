@@ -66,6 +66,7 @@ class Client(Persisted):
                 location.data = data
                 yield location.save()
                 self.editor_broadcast(roomUpdated=location.data)
+            self.send(roomSaved=location.id)
         if 'editEntity' in message:
             data = message['editEntity']
             entity = self.world.entities.get(data['id'])
@@ -73,6 +74,7 @@ class Client(Persisted):
                 entity.data = data
                 yield entity.save()
                 self.editor_broadcast(entityUpdated=entity.data)
+            self.send(entitySaved=entity.id)
         if 'moveRoom' in message:
             data = message['moveRoom']
             location = self.world.locations.get(data['id'])

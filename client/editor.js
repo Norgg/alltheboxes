@@ -46,7 +46,7 @@ var Editor = function() {
     /**************** ROOM METHODS *****************/
     self.onRoomSaved = function(roomId) {
         var roomEditor = self.roomEditors[roomId];
-        roomEditor.div.find('.roomContent').hide(200, function(){self.drawLines()});
+        roomEditor.div.find('.boxContent').hide(200, function(){self.drawLines()});
         roomEditor.refreshContent();
     };
 
@@ -88,7 +88,7 @@ var Editor = function() {
 
     self.onEntitySaved = function(entityId) {
         var entityEditor = self.entityEditors[entityId];
-        entityEditor.div.find('.entityContent').hide(200, function(){self.drawLines()});
+        entityEditor.div.find('.boxContent').hide(200);
         entityEditor.refreshContent();
     };
 
