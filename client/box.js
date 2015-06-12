@@ -20,12 +20,6 @@ var Box = function(editor, title, data) {
         start: function(evt, ui) {
             self.editor.noclick = true;
         },
-        drag: function(evt, ui) {
-            self.editor.drawLines();
-        },
-        stop: function(evt, ui) {
-            self.savePos();
-        },
     });
     
     self.head = $('<div class="boxHead">'); //Header, clicked on to expand.
@@ -61,8 +55,9 @@ var Box = function(editor, title, data) {
         var offset = self.div.offset();
         self.data.edit_x = offset.left;
         self.data.edit_y = offset.top;
-        var cmd = 'move' + self.type;
-        self.editor.emit({cmd: self.data});
+        var cmd = {};
+        cmd['move' + self.type] = self.data;
+        self.editor.emit(cmd);
     };
 
     self.row = function() {

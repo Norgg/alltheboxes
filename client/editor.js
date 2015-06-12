@@ -18,7 +18,7 @@ var EditorMethods = {
 
         this.entityEditors = {};
         for (var entityId in this.entities) {
-            var entityEditor = EntityEditor(this.entities[entityId], this);
+            var entityEditor = EntityEditor(this, this.entities[entityId]);
             this.entityEditors[entityId] = entityEditor;
         }
         this.drawLines();

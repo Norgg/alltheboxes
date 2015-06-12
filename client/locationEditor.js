@@ -18,6 +18,12 @@ var RoomEditor = function(editor, data) {
         },
     });
 
+    self.div.draggable({
+        'drag': function(evt, ui) { self.editor.drawLines(); },
+        'stop': function(evt, ui) { self.savePos(); }
+    });
+
+
     self.refreshContent = function() {
         self.content.empty();
         var form = $('<form>');
