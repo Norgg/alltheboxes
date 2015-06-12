@@ -18,22 +18,22 @@ body, #editor {
   position: relative;
 }
 
-.entityEditbox {
+.entity {
   background-color: #ccccff;
 }
 
-.boxHead, .entityHead {
+.boxHead {
   cursor: pointer;
   text-align: center;
 }
 
-.boxHead h1, .entityHead h1 {
+.boxHead h1 {
   font-size: 1.1rem;
   margin-top: 0px;
   margin-bottom: 0px;
 }
 
-.boxContent, .entityConent {
+.boxContent {
   display: none;
 }
 

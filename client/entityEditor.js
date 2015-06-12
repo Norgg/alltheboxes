@@ -1,6 +1,7 @@
 function EntityEditor(editor, data) {
     var self = Box(editor, data.name, data);
     self.type = "Entity";
+    self.div.addClass('entity');
 
     self.refreshContent = function() {
         //TODO: Factor out general form stuff

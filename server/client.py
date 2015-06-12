@@ -66,6 +66,13 @@ class Client(Persisted):
                 location.data = data
                 yield location.save()
                 self.editor_broadcast(roomUpdated=location.data)
+        if 'editEntity' in message:
+            data = message['editEntity']
+            entity = self.world.entities.get(data['id'])
+            if entity is not None:
+                entity.data = data
+                yield entity.save()
+                self.editor_broadcast(entityUpdated=entity.data)
         if 'moveRoom' in message:
             data = message['moveRoom']
             location = self.world.locations.get(data['id'])
@@ -73,11 +80,15 @@ class Client(Persisted):
                 location.data['edit_x'] = data['edit_x']
                 location.data['edit_y'] = data['edit_y']
                 yield location.save()
-                for client in self.world.editors:
-                    try:
-                        client.send(roomMoved=data)
-                    except WebSocketClosedError:
-                        self.world.editors.remove(client)
+                self.editor_broadcast(roomMoved=data)
+        if 'moveEntity' in message:
+            data = message['moveEntity']
+            entity = self.world.entities.get(data['id'])
+            if entity is not None:
+                entity.data['edit_x'] = data['edit_x']
+                entity.data['edit_y'] = data['edit_y']
+                yield entity.save()
+                self.editor_broadcast(entityMoved=data)
 
         # player messages:
         if 'cmd' in message:
@@ -172,9 +183,8 @@ class Client(Persisted):
         self.data = data
         self.id = data['id']
 
-        old_entity = self.entity;
         if self.entity is not None and 'guest' in self.entity.data['aspects']:
-          self.entity.destroy()
+            self.entity.destroy()
 
         self.entity = self.world.entities[data['entity_id']]
         yield self.entity.save()
@@ -218,7 +228,6 @@ class Client(Persisted):
                 client.send(**kwargs)
             except WebSocketClosedError:
                 self.world.editors.remove(client)
-        
 
     @coroutine
     def on_close(self):

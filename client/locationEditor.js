@@ -2,6 +2,7 @@ var RoomEditor = function(editor, data) {
     var self = Box(editor, data.name, data);
 
     self.type = "Room";
+    self.div.addClass('room');
     self.gfx = $('#lines')[0].getContext("2d");
 
     // TODO: Make it so that dragging a connector before naming an exit still
@@ -18,8 +19,7 @@ var RoomEditor = function(editor, data) {
     });
 
     self.div.draggable({
-        'drag': function(evt, ui) { self.editor.drawLines(); },
-        'stop': function(evt, ui) { self.savePos(); }
+        drag: function(evt, ui) { self.editor.drawLines(); },
     });
 
 

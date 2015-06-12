@@ -20,6 +20,7 @@ var Box = function(editor, title, data) {
         start: function(evt, ui) {
             self.editor.noclick = true;
         },
+        stop: function(evt, ui) { self.savePos(); }
     });
     
     self.head = $('<div class="boxHead">'); //Header, clicked on to expand.
@@ -101,7 +102,6 @@ var Box = function(editor, title, data) {
     self.makeInput = function(name, val) {
         var input = $('<input>');
 
-        console.log(name + "=" + val);
         if (name == "name" && val == "Home") input.attr('readonly', true);
 
         input.attr('name', name);

@@ -35,6 +35,8 @@ create table entities (
     id serial primary key,
     name text not null,
     description text,
+    edit_x int default 100,
+    edit_y int default 100,
     location_id int references locations(id),
     container int references entities(id),
     attributes hstore,
