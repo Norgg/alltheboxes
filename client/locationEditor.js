@@ -9,7 +9,6 @@ var RoomEditor = function(editor, data) {
     self.div.droppable({
         accept: ".exitTarget",
         drop: function(evt, ui) {
-            console.log(ui.draggable.data("roomEditor"));
             if (ui.draggable.data("exitInput").val()) {
                 ui.draggable.data("roomEditor").data.exits[ui.draggable.data("exitInput").val()] = self.data.id;
             }
@@ -26,14 +25,7 @@ var RoomEditor = function(editor, data) {
 
     self.refreshContent = function() {
         self.content.empty();
-        var form = $('<form>');
-        form.submit(function(evt) {
-            evt.preventDefault();
-            console.log(self.data);
-            self.div.find('.headTitle').text(self.data.name);
-            self.editor.emit({'editRoom': self.data});
-            return false;
-        });
+        var form = self.form();
 
         var table = $('<table>');
         table.append(self.row("id:", '<input readonly value="' + self.data.id + '">'));
@@ -61,15 +53,7 @@ var RoomEditor = function(editor, data) {
 
         newExit.keydown(newExitKeyUp);
 
-        var saveButton = $('<input type="submit" class="save" value="save"/>');
-
-        var destroyButton = $('<button class="destroy">destroy</button>');
-        destroyButton.click(function(evt) {
-            evt.preventDefault();
-            if (confirm("Sure?")) self.editor.emit({'destroyRoom': self.data.id});
-        });
-
-        table.append(self.row(saveButton, destroyButton));
+        self.addButtons(table);
 
         form.append(table);
         self.content.append(form);

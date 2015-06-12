@@ -9,7 +9,6 @@ var EditorMethods = {
         console.log("Got world.");
         this.rooms = world.locations;
         this.entities = world.entities;
-        console.log(world);
         this.roomEditors = {};
         for (var roomId in this.rooms) {
             var roomEditor = RoomEditor(this, this.rooms[roomId]);
@@ -53,7 +52,6 @@ var EditorMethods = {
     },
 
     onCreated: function(room) {
-        console.log(room)
         this.rooms[room.id] = room;
         var roomEditor = RoomEditor(this, room);
         this.roomEditors[room.id] = roomEditor;
@@ -92,7 +90,6 @@ var EditorMethods = {
 
     onMessage: function(evt) {
         var msg = JSON.parse(evt.data);
-        console.log(msg);
         if (msg.world) this.onWorld(msg.world);
         if (msg.roomSaved) this.onSaved(msg.roomSaved);
         if (msg.roomDestroyed) this.onDestroyed(msg.roomDestroyed);
@@ -112,7 +109,6 @@ var Editor = function() {
     self.maxZ = 1;
 
     this.editDiv = $('#editor');
-    console.log(this.editDiv);
     this.newRoomName = $('#newRoomName');
     this.newEntityName = $('#newEntityName');
 

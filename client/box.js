@@ -60,6 +60,34 @@ var Box = function(editor, title, data) {
         self.editor.emit(cmd);
     };
 
+    self.form = function() {
+        var form = $('<form>');
+
+        form.submit(function(evt) {
+            evt.preventDefault();
+            self.div.find('.headTitle').text(self.data.name);
+            var cmd = {};
+            cmd['edit'+self.type] = self.data;
+            self.editor.emit(cmd);
+            return false;
+        });
+        return form;
+    };
+
+    self.addButtons = function(table) {
+        var saveButton = $('<input type="submit" class="save" value="save"/>');
+
+        var destroyButton = $('<button class="destroy">destroy</button>');
+        destroyButton.click(function(evt) {
+            evt.preventDefault();
+            var cmd = {};
+            cmd['destroy'+self.type] = self.data.id;
+            if (confirm("Sure?")) self.editor.emit(cmd);
+        });
+
+        table.append(self.row(saveButton, destroyButton));
+    };
+
     self.row = function() {
         var tr = $('<tr>');
         Array.prototype.slice.call(arguments, 0).forEach(function(item) {
