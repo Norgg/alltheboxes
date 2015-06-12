@@ -99,7 +99,10 @@ var Box = function(editor, title, data) {
         return tr;
     };
 
-    self.makeInput = function(name, val) {
+    self.makeInput = function(name, val, process) {
+        if (!process) {
+            process = function(data) { return data; };
+        }
         var input = $('<input>');
 
         if (name == "name" && val == "Home") input.attr('readonly', true);
@@ -107,7 +110,7 @@ var Box = function(editor, title, data) {
         input.attr('name', name);
         input.val(val);
         input.keyup(function() { 
-            if (input.val()) self.data[name] = input.val();
+            if (input.val()) self.data[name] = process(input.val());
         });
         return self.row(name+":", input);
     };
