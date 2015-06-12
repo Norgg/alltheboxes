@@ -94,15 +94,15 @@ class Client(Persisted):
             location = self.world.locations.get(id)
             if location is not None:
                 print("Destroying location {}".format(location.data['name']))
-                del self.world.locations[location.id]
-                location.destroy()
+                yield location.destroy()
+                self.editor_broadcast(roomDestroyed=id)
         if 'destroyEntity' in message:
             id = message['destroyEntity']
             entity = self.world.entities.get(id)
             if entity is not None:
                 print("Destroying entity {}".format(entity.data['name']))
-                del self.world.entities[id]
-                entity.destroy()
+                yield entity.destroy()
+                self.editor_broadcast(entityDestroyed=id)
 
         # player messages:
         if 'cmd' in message:

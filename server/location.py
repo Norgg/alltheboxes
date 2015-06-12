@@ -90,3 +90,8 @@ class Location(Persisted):
     def describe(self):
         exit_desc = "Exits: {}".format(", ".join(name for name, location_id in self.data['exits'].items()))
         return "{}\n{}".format(self.data['description'], exit_desc)
+
+    @coroutine
+    def destroy(self):
+        del self.world.locations[self.id]
+        yield super(Location, self).destroy()

@@ -11,6 +11,7 @@ function EntityEditor(editor, data) {
         var table = $('<table>');
         table.append(self.row("id:", '<input readonly value="' + self.data.id + '">'));
         table.append(self.makeInput('name', self.data.name));
+        table.append(self.makeInput('location', self.data.location_id));
         table.append(self.makeTextarea('description', self.data.description));
 
         var saveButton = $('<input type="submit" class="save" value="save"/>');
