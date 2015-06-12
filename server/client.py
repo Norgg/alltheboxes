@@ -89,6 +89,20 @@ class Client(Persisted):
                 entity.data['edit_y'] = data['edit_y']
                 yield entity.save()
                 self.editor_broadcast(entityMoved=data)
+        if 'destroyRoom' in message:
+            id = message['destroyRoom']
+            location = self.world.locations.get(id)
+            if location is not None:
+                print("Destroying location {}".format(location.data['name']))
+                del self.world.locations[location.id]
+                location.destroy()
+        if 'destroyEntity' in message:
+            id = message['destroyEntity']
+            entity = self.world.entities.get(id)
+            if entity is not None:
+                print("Destroying entity {}".format(entity.data['name']))
+                del self.world.entities[id]
+                entity.destroy()
 
         # player messages:
         if 'cmd' in message:
