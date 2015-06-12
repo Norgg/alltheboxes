@@ -97,7 +97,7 @@ class Player(object):
             yield new_location.add_entity(self.client.entity)
             yield new_location.save()
             self.send_location_description()
-            self.client.send_event("{} entered.".format(self.client.data['username']))
+            new_location.send_event("{} entered.".format(self.client.data['username']))
 
     @coroutine
     def look(self, cmd_arg):
