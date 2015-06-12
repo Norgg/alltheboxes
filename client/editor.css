@@ -22,18 +22,18 @@ body, #editor {
   background-color: #ccccff;
 }
 
-.roomHead, .entityHead {
+.boxHead, .entityHead {
   cursor: pointer;
   text-align: center;
 }
 
-.roomHead h1, .entityHead h1 {
+.boxHead h1, .entityHead h1 {
   font-size: 1.1rem;
   margin-top: 0px;
   margin-bottom: 0px;
 }
 
-.roomContent, .entityConent {
+.boxContent, .entityConent {
   display: none;
 }
 

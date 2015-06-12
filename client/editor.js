@@ -12,9 +12,8 @@ var EditorMethods = {
         console.log(world);
         this.roomEditors = {};
         for (var roomId in this.rooms) {
-            var roomEditor = new RoomEditor(this.rooms[roomId], this);
+            var roomEditor = RoomEditor(this, this.rooms[roomId]);
             this.roomEditors[roomId] = roomEditor;
-            roomEditor.makeRoomBox();
         }
 
         this.entityEditors = {};
@@ -56,7 +55,7 @@ var EditorMethods = {
     onCreated: function(room) {
         console.log(room)
         this.rooms[room.id] = room;
-        var roomEditor = new RoomEditor(room, this);
+        var roomEditor = RoomEditor(this, room);
         this.roomEditors[room.id] = roomEditor;
         roomEditor.makeRoomBox(this);
         this.drawLines();
@@ -113,6 +112,7 @@ var Editor = function() {
     self.maxZ = 1;
 
     this.editDiv = $('#editor');
+    console.log(this.editDiv);
     this.newRoomName = $('#newRoomName');
     this.newEntityName = $('#newEntityName');
 
